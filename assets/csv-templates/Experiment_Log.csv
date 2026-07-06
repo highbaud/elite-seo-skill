@@ -1,0 +1,2 @@
+Experiment,Hypothesis,Page / Platform,Start Date,Change Made,Primary Metric,Baseline,Result,Position Stable?,Status,Decision / Next Action
+Title rewrite test,Specific title lifts CTR at same position,,,,CTR at position bucket,,,,Running,Compare CTR only at stable positions; annotate change date

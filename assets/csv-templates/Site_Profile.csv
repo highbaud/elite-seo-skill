@@ -1,0 +1,13 @@
+Field,Answer,Why it matters
+Site / brand,,Defines entity consistency across SEO and AI surfaces
+Business model,,"SaaS, local, ecommerce, publisher, affiliate, marketplace, lead gen"
+Primary offer,,"SEO should support revenue, not vanity traffic"
+Average order / contract value,,Used to prioritize high-intent queries
+Top 5 competitors,,Separate business competitors from SERP competitors
+Primary geography,,"Local, national, international, service area"
+YMYL risk?,,"Medical, legal, finance, safety, civic, health, high-trust topics"
+Tech stack / CMS,,Impacts crawl/render/schema/migration fixes
+Primary conversion,,"Lead, call, trial, purchase, subscription, demo"
+Analytics stack,,"GA4, CRM, call tracking, ecommerce, BI"
+Existing SEO tools,,"GSC, Bing, Ahrefs, Semrush, Screaming Frog, Surfer, Search Atlas"
+Risk tolerance,,"White-hat only, experimental allowed, no paid links, etc."

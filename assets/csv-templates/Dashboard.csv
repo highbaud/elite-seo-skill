@@ -1,0 +1,12 @@
+Metric,Formula / Value,Notes
+Open issues,"=COUNTIF(Issue_Register!O:O,""Open"")",Total unresolved audit issues
+Fix-now issues,"=COUNTIF(Issue_Register!L:L,""Fix now"")",Priority band 14+
+Technical issues,"=COUNTIF(Issue_Register!B:B,""Technical"")",Crawl/index/render/speed/schema
+Content issues,"=COUNTIF(Issue_Register!B:B,""Content"")","Intent, quality, decay, cannibalization"
+Authority issues,"=COUNTIF(Issue_Register!B:B,""Authority"")","Links, mentions, PR, reputation"
+AI visibility gaps,"=COUNTIF(Issue_Register!B:B,""AI Search"")",Mention/citation/crawler gaps
+Average priority,"=IFERROR(ROUND(AVERAGE(Issue_Register!K:K),1),""-"")",Formula: impact + confidence + risk + speed - effort
+30-day actions,"=COUNTIF(Roadmap_30_60_90!A:A,""30 days"")",Immediate execution load
+Critical red-line risks,"=COUNTIF(Risk_Register!D:D,""Red"")",Do not execute without explicit risk acceptance
+Experiments open,"=COUNTIF(Experiment_Log!J:J,""Running"")",Active tests with a decision pending
+Crawlers undecided,"=COUNTIF(Crawler_Access!E:E,""Undecided"")",Bot policies still needing a deliberate decision

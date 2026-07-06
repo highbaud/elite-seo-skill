@@ -1,0 +1,3 @@
+URL Pattern,Bot,Hits 30d,% of Total Crawl,Status Mix,Indexable?,Crawl Value,Issue,Action
+/collections?sort=*,Googlebot,,,200,No,Waste,Parameter crawl trap,"Canonical + robots strategy, then re-measure"
+/guides/*,Googlebot,,,200,Yes,Under-crawled,Important pages rarely hit,"Add hub/internal links, include in sitemap"

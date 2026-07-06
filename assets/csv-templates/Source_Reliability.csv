@@ -1,0 +1,6 @@
+Grade,Definition,Use,Examples
+A,Primary documentation or first-party platform policy,Can be treated as the base rule,"Google Search Central, OpenAI crawler docs, Perplexity docs"
+B,Repeatable field practice with broad industry support,Use when it aligns with primary docs,"Content pruning, internal linking, log analysis, earned link outreach"
+C,Tool/vendor guidance or case study,Use as hypothesis; verify on the site,"Surfer, Search Atlas, Ahrefs, agency studies"
+D,"Social post, anecdote, one-off tactic",Test only if low-risk and measurable,"X threads, Instagram reels, isolated screenshots"
+Red,"Manipulative, deceptive, or policy-risk tactic",Do not execute for serious projects,"Fake reviews, link schemes, doorway pages, inauthentic mentions"

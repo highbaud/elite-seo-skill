@@ -1,0 +1,15 @@
+Bot / User-agent,Operator,What It Feeds,Blocking Consequence,Policy Decision,Verified Access?,Notes
+Googlebot,Google,"Google Search, AI Overviews, AI Mode",Removed from Google Search AND its AI answer features,Allow,,There is no separate crawler to block only AI Overviews; use nosnippet/max-snippet/data-nosnippet for display control
+Google-Extended,Google,Gemini training and grounding,Opts out of Gemini training; does NOT remove AI Overviews visibility,Undecided,,Common misconception: blocking this does not affect Google Search or AI Overviews inclusion
+Bingbot,Microsoft,"Bing, Copilot, and part of ChatGPT Search results",Weakens visibility in Copilot and ChatGPT answers,Allow,,Bing indexation matters for AI answers; submit via IndexNow and Bing Webmaster Tools
+OAI-SearchBot,OpenAI,ChatGPT Search surfacing/citations,Site not eligible for ChatGPT Search summaries,Allow,,Separate from GPTBot; OpenAI documents no guaranteed placement
+GPTBot,OpenAI,OpenAI model training,Content excluded from future model training,Undecided,,Deliberate business decision; independent from search inclusion
+ChatGPT-User,OpenAI,User-triggered live page fetches,Users cannot pull the page into a chat,Allow,,
+PerplexityBot,Perplexity,Perplexity search surfacing/citations,Not surfaced in Perplexity results,Allow,,
+Perplexity-User,Perplexity,User-triggered live fetches,n/a,Monitor,,Perplexity documents that user-triggered fetches generally ignore robots.txt; control at WAF level if needed
+ClaudeBot,Anthropic,Anthropic model training,Content excluded from Claude training,Undecided,,
+Claude-SearchBot / Claude-User,Anthropic,Claude search surfacing / user fetches,Not cited in Claude answers,Allow,,
+Applebot / Applebot-Extended,Apple,"Siri, Spotlight / Apple AI training",Applebot-Extended only opts out of AI training,Undecided,,
+CCBot,Common Crawl,Open corpus used by many AI labs,Excluded from Common Crawl derived training sets,Undecided,,
+meta-externalagent,Meta,Meta AI training,Excluded from Meta training,Undecided,,
+Bytespider,ByteDance,ByteDance AI training,Excluded if it complies,Undecided,,Widely reported to ignore robots.txt; enforce at CDN/WAF if blocking matters
