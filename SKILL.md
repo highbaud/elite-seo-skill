@@ -1,6 +1,6 @@
 ---
 name: elite-seo
-description: Review, audit, or improve SEO for a page, a site, or a whole strategy (SaaS, local service, ecommerce, publisher, affiliate/review, marketplace, personal brand, YMYL). Use whenever the user asks to review SEO, improve SEO, audit SEO, do on-page or technical SEO, optimize a page for search, build an SEO or keyword/content plan, do link building or local SEO, improve AI search visibility (AEO/GEO, ChatGPT/Perplexity/AI Overviews citations), analyze content decay or cannibalization, or produce an SEO client report. Includes a 30-tab audit workbook, scored issue register, SOPs, site-type playbooks, GSC export analyzer, and client report templates.
+description: Review, audit, or improve SEO for a page, a site, or a whole strategy (SaaS, local service, ecommerce, publisher, affiliate/review, marketplace, personal brand, YMYL). Use whenever the user asks to review SEO, improve SEO, audit SEO, do on-page or technical SEO, optimize a page for search, build an SEO or keyword/content plan, do link building or local SEO, improve AI search visibility (AEO/GEO, ChatGPT/Perplexity/AI Overviews citations), analyze content decay or cannibalization, or produce an SEO client report. Includes a 31-tab audit workbook, scored issue register, SOPs, site-type playbooks, GSC export analyzer, and client report templates.
 ---
 
 # Elite SEO Operating Kit

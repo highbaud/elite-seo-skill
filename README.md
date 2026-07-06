@@ -12,7 +12,7 @@ It works for SaaS, local service, ecommerce, publisher, affiliate/review, market
 | `references/elite-seo-knowledge-plan.md` | The full operating system — layered authority model, 14 phases, 90-day plan, outranking playbooks |
 | `references/elite-seo-audit-strategy-expansion.md` | 24 diagnostic audit modules (crawl, rendering, index control, entities, cannibalization, CTR, decay, E-E-A-T, schema, ecommerce, local, international, migration QA, security, and more) |
 | `references/kit/00-12*.md` | SOPs: intake/triage, fast wins, technical, content/authority, AI search/AEO, links/reputation, site-type playbooks, client report, red-team risk review, prompt pack, executive scorecard, master checklist, agent readability |
-| `assets/elite-seo-master-audit-workbook.xlsx` | 30-tab audit workbook with a scored Issue Register, priority formulas, dropdowns, and a per-bot crawler-access matrix |
+| `assets/elite-seo-master-audit-workbook.xlsx` | 31-tab audit workbook with a scored Issue Register, priority formulas, dropdowns, and a per-bot crawler-access matrix |
 | `assets/csv-templates/` | Every workbook tab as a CSV for Google Sheets / Airtable / Notion / a database |
 | `assets/elite-seo-audit-report-template.docx` | Client-ready audit report template |
 | `scripts/seo_gsc_analyzer.py` | Dependency-free Google Search Console export analyzer |
