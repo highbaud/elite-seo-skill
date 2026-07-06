@@ -100,4 +100,5 @@
 - [ ] Owners assigned.
 - [ ] Success metrics assigned.
 - [ ] Experiments logged in Experiment_Log with baselines.
+- [ ] Agent-readability pass done on priority pages (see 12).
 - [ ] Red-team risk review complete.

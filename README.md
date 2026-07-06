@@ -11,7 +11,7 @@ It works for SaaS, local service, ecommerce, publisher, affiliate/review, market
 | `SKILL.md` | Entry point: core rules, workflow, AI-search facts, routing |
 | `references/elite-seo-knowledge-plan.md` | The full operating system — layered authority model, 14 phases, 90-day plan, outranking playbooks |
 | `references/elite-seo-audit-strategy-expansion.md` | 24 diagnostic audit modules (crawl, rendering, index control, entities, cannibalization, CTR, decay, E-E-A-T, schema, ecommerce, local, international, migration QA, security, and more) |
-| `references/kit/00-11*.md` | SOPs: intake/triage, fast wins, technical, content/authority, AI search/AEO, links/reputation, site-type playbooks, client report, red-team risk review, prompt pack, executive scorecard, master checklist |
+| `references/kit/00-12*.md` | SOPs: intake/triage, fast wins, technical, content/authority, AI search/AEO, links/reputation, site-type playbooks, client report, red-team risk review, prompt pack, executive scorecard, master checklist, agent readability |
 | `assets/elite-seo-master-audit-workbook.xlsx` | 30-tab audit workbook with a scored Issue Register, priority formulas, dropdowns, and a per-bot crawler-access matrix |
 | `assets/csv-templates/` | Every workbook tab as a CSV for Google Sheets / Airtable / Notion / a database |
 | `assets/elite-seo-audit-report-template.docx` | Client-ready audit report template |
@@ -24,6 +24,7 @@ It works for SaaS, local service, ecommerce, publisher, affiliate/review, market
 - **Sources are graded A–D / Red.** Primary docs vs. field practice vs. vendor claims vs. anecdotes vs. policy-risk tactics. C/D claims are never presented as facts.
 - **Red lines are explicit.** No fake reviews, paid dofollow schemes, doorway pages, mass thin AI pages, cloaking, or impersonation.
 - **AI search facts kept honest.** Correct handling of Google-Extended vs. AI Overviews, the Bing↔ChatGPT relationship, `llms.txt`, FAQ/HowTo rich-result deprecation, and prompt volatility.
+- **Agent readability is a first-class audit.** A dedicated SOP and workbook tab for whether AI agents can extract, date, attribute, and parse a page (not just whether it ranks), with directional field benchmarks.
 
 ## Install
 

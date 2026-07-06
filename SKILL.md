@@ -23,6 +23,7 @@ A complete SEO audit and strategy operating system. Everything is self-contained
    - Content, decay, cannibalization, topical authority: `references/kit/03-content-authority-sop.md`
    - AI search / AEO measurement and crawler policy: `references/kit/04-ai-search-aeo-sop.md`
    - Links, reviews, reputation, branded SERP: `references/kit/05-link-reputation-sop.md`
+   - Agent readability (can an AI agent extract, date, attribute, and parse the page): `references/kit/12-agent-readability-sop.md`
    - Quick wins first if the engagement needs fast proof: `references/kit/01-fast-wins-sop.md`
 4. **Score and roadmap** — every finding into `Issue_Register`; build the 30/60/90 roadmap from the highest-scoring issues. Verify with `references/kit/11-master-checklist.md`.
 5. **Deliver** — use `references/kit/07-client-report-template.md` (markdown) or `assets/elite-seo-audit-report-template.docx`, fronted by `references/kit/10-executive-scorecard.md`.
@@ -36,6 +37,10 @@ A complete SEO audit and strategy operating system. Everything is self-contained
 - FAQ rich results display only for authoritative gov/health sites; HowTo rich results are deprecated (both since 2023).
 - AI answers are volatile: run each prompt 3+ times across days, log engine/region/account state, report mention/citation rates as fractions. Never claim "ranks #1 on ChatGPT" from one run.
 - The full per-bot decision matrix (Google, OpenAI, Perplexity, Anthropic, Apple, Meta, Common Crawl, ByteDance) is the `Crawler_Access` workbook tab; every bot gets a deliberate Allow/Block decision.
+
+## Agent Readability (getting read by AI agents, not just cited)
+
+Distinct from citation measurement above: a page can rank for humans yet be unusable to an AI agent that fetches and extracts it. Run `references/kit/12-agent-readability-sop.md` on priority pages and score gaps into the `Agent_Readability` tab. The durable wins, in order: extractable static content (not JS-only), visible dates + date schema, named authorship, and concise answer capsules / Q&A structure. `llms.txt` and `ai.txt` are cheap "agent welcome mats" but are optional and not ranking levers, so never rank them above the extraction and trust fixes. Field benchmarks in the SOP are directional ("typical sites"), not Google-enforced thresholds.
 
 ## Automation
 

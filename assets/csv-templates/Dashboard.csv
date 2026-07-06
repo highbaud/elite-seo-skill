@@ -10,3 +10,4 @@ Average priority,"=IFERROR(ROUND(AVERAGE(Issue_Register!K:K),1),""-"")",Formula:
 Critical red-line risks,"=COUNTIF(Risk_Register!D:D,""Red"")",Do not execute without explicit risk acceptance
 Experiments open,"=COUNTIF(Experiment_Log!J:J,""Running"")",Active tests with a decision pending
 Crawlers undecided,"=COUNTIF(Crawler_Access!E:E,""Undecided"")",Bot policies still needing a deliberate decision
+Agent-readability gaps,"=COUNTIF(Issue_Register!B:B,""Agent Readability"")","Extractability, dating, authorship, answer-structure gaps for AI agents"

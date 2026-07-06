@@ -27,6 +27,7 @@ This folder turns the SEO knowledge plan into a working audit and execution syst
 - `09-elite-prompts.md`: copy-paste prompts for audits, briefs, refreshes, and AI search testing.
 - `10-executive-scorecard.md`: one-page health snapshot for report covers and weekly operating reviews.
 - `11-master-checklist.md`: the master pass before any strategy is delivered.
+- `12-agent-readability-sop.md`: whether AI agents/browsers can extract, date, attribute, and parse pages, with field benchmarks.
 
 ## Automation
 
@@ -43,7 +44,7 @@ Paste the outputs into the matching workbook tabs, then score survivors into `Is
 
 ## Workbook Tabs Worth Knowing
 
-Beyond the audit tabs, the workbook includes: `Crawler_Access` (per-bot policy matrix covering Google, OpenAI, Perplexity, Anthropic, Apple, Meta, Common Crawl, and ByteDance crawlers, with the blocking consequence of each), `Log_File_Analysis` (crawl-budget and bot-behavior evidence), `Rank_Tracking` (positions plus AI-answer presence per surface), `Experiment_Log` (hypothesis-driven tests with position-controlled CTR rules), and `Competitors` (business vs SERP-only competitors, link gaps, AI citations).
+Beyond the audit tabs, the workbook includes: `Crawler_Access` (per-bot policy matrix covering Google, OpenAI, Perplexity, Anthropic, Apple, Meta, Common Crawl, and ByteDance crawlers, with the blocking consequence of each), `Log_File_Analysis` (crawl-budget and bot-behavior evidence), `Rank_Tracking` (positions plus AI-answer presence per surface), `Experiment_Log` (hypothesis-driven tests with position-controlled CTR rules), `Competitors` (business vs SERP-only competitors, link gaps, AI citations), and `Agent_Readability` (per-page extractability, freshness, authorship, and answer-structure scoring for AI agents).
 
 ## Rule
 
