@@ -99,3 +99,4 @@ Remaining gap = subjective (stale, pre-cycle-2). NEXT: re-review #3 (desloppify 
 - R4 wave1 DONE (xmod 93, high 87, conv 92, err 90, naming 92). Wave2 launched.
 - R4 wave2 DONE (abs 91, deps 96, low 87, mid 90, test 88). Wave3 launched.
 - R4 wave3 DONE (api 84, authz 96, ai 91, mig 95, pkg 90). Wave4 launched.
+- Review #4 imported: strict 92.0 (+0.2, plateau). 7 small new items -> cycle 4 fixes, then stop & report (offer another review).
