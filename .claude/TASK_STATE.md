@@ -82,3 +82,7 @@ high_eleg 86, incomplete_mig 96, init 91, logic 88, low_eleg 81, mid_eleg 82, na
 - FINDING: strict counts status auto_resolved as failing. Mechanical fixes that vanish on rescan must be attested: `desloppify plan reopen <id>` then `plan resolve <id> --note ... --confirm`. Did this for 13 items.
 - sys_exit_in_library x3 marked --false-positive (honest: sys.exit(main()) in __main__ guard; detector ignores main guards). false_positive not penalized by strict.
 - Removed unused import tests/test_docs.py. Sonnet agent splitting tests/test_seo_gsc_analyzer.py (responsibility_cohesion). Then: rescan, re-review.
+
+## Cycle 2 result
+strict 89.8 = overall 89.8 | objective 100 | 0 open (3 false_positive). Mechanical all 100%.
+Remaining gap = subjective (stale, pre-cycle-2). NEXT: re-review #3 (desloppify review --run-batches --dry-run --force-review-rerun), import, fix new items.
