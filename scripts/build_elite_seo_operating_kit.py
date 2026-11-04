@@ -22,6 +22,8 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+# A missing dependency is reported by main() as a one-line error rather than a traceback.
+MISSING_DEPENDENCY: str | None = None
 try:
     from openpyxl import Workbook
     from openpyxl.formatting.rule import FormulaRule
@@ -29,10 +31,8 @@ try:
     from openpyxl.utils import get_column_letter
     from openpyxl.worksheet.datavalidation import DataValidation
     from openpyxl.worksheet.worksheet import Worksheet
-except ImportError as exc:
-    raise ImportError(
-        "openpyxl is required to build the kit. Install it with: pip install -r requirements.txt"
-    ) from exc
+except ImportError:
+    MISSING_DEPENDENCY = "openpyxl is not installed; run: pip install -r requirements.txt"
 
 from kit_common import ASSETS_DIR, CellValue, atomic_write, write_csv
 from workbook_spec import LAST_DATA_ROW, SHEETS, SheetSpec, column_letter
@@ -173,6 +173,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 def main(argv: Sequence[str] | None = None) -> int:
     """CLI entry point; returns the process exit code."""
     args = parse_args(argv)
+    if MISSING_DEPENDENCY:
+        print(f"error: {MISSING_DEPENDENCY}", file=sys.stderr)
+        return 1
     try:
         workbook_path, csv_dir = build_kit(args.out_dir)
     except OSError as exc:

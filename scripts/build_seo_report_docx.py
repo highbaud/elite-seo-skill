@@ -22,17 +22,16 @@ from pathlib import Path
 
 from kit_common import ASSETS_DIR, atomic_write
 
+# A missing dependency is reported by main() as a one-line error rather than a traceback.
+MISSING_DEPENDENCY: str | None = None
 try:
     from docx import Document
     from docx.document import Document as DocumentType
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.shared import Inches, Pt
     from docx.table import Table
-except ImportError as exc:
-    raise ImportError(
-        "python-docx is required to build the report template. "
-        "Install it with: pip install -r requirements.txt"
-    ) from exc
+except ImportError:
+    MISSING_DEPENDENCY = "python-docx is not installed; run: pip install -r requirements.txt"
 
 OUTPUT_NAME = "elite-seo-audit-report-template.docx"
 
@@ -259,6 +258,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 def main(argv: Sequence[str] | None = None) -> int:
     """CLI entry point; returns the process exit code."""
     args = parse_args(argv)
+    if MISSING_DEPENDENCY:
+        print(f"error: {MISSING_DEPENDENCY}", file=sys.stderr)
+        return 1
     path: Path = args.out_dir / OUTPUT_NAME
     doc = build_document()
     try:

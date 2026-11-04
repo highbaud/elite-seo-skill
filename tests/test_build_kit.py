@@ -60,13 +60,19 @@ def test_column_letter() -> None:
         spec.column_letter("Missing_Tab", "ID")
 
 
-def test_column_letter_wraps_past_z(monkeypatch: pytest.MonkeyPatch) -> None:
-    headers = tuple(f"h{i}" for i in range(1, 53))
-    monkeypatch.setitem(spec._HEADERS, "Wide", headers)
-    assert spec.column_letter("Wide", "h1") == "A"
-    assert spec.column_letter("Wide", "h26") == "Z"
-    assert spec.column_letter("Wide", "h27") == "AA"
-    assert spec.column_letter("Wide", "h52") == "AZ"
+def test_column_letter_for_index_wraps_past_z() -> None:
+    assert spec.column_letter_for_index(1) == "A"
+    assert spec.column_letter_for_index(26) == "Z"
+    assert spec.column_letter_for_index(27) == "AA"
+    assert spec.column_letter_for_index(52) == "AZ"
+    assert spec.column_letter_for_index(703) == "AAA"
+    with pytest.raises(ValueError):
+        spec.column_letter_for_index(0)
+
+
+def test_issue_register_guarded_rows_start_after_seeds() -> None:
+    sheet = next(s for s in spec.SHEETS if s.title == "Issue_Register")
+    assert {fill.first_row for fill in sheet.fills} == {spec.FIRST_DATA_ROW + len(sheet.rows)}
 
 
 def test_dashboard_formulas_point_at_correct_columns(built: Path) -> None:
@@ -111,3 +117,36 @@ def test_unwritable_out_dir_is_clean_error(tmp_path: Path, capsys: pytest.Captur
     blocker.write_text("x")
     assert builder.main(["--out-dir", str(blocker)]) == 1
     assert capsys.readouterr().err.startswith("error: could not write the kit to")
+
+
+def _sheet_snapshot(ws) -> dict[str, object]:
+    """Everything about a sheet that the builder controls, in comparable form."""
+    return {
+        "values": [[cell.value for cell in row] for row in ws.iter_rows()],
+        "header_style": [(c.fill.fgColor.rgb, c.font.b, c.alignment.horizontal) for c in ws[1]],
+        "freeze_panes": ws.freeze_panes,
+        "auto_filter": ws.auto_filter.ref,
+        "widths": {key: dim.width for key, dim in ws.column_dimensions.items()},
+        "validations": sorted(_validations(ws).items()),
+        "conditional": [
+            (str(rng.sqref), [(rule.type, rule.formula) for rule in rng.rules])
+            for rng in ws.conditional_formatting
+        ],
+    }
+
+
+def test_committed_workbook_matches_builder_output(built: Path) -> None:
+    committed = load_workbook(kit_common.ASSETS_DIR / builder.WORKBOOK_NAME)
+    fresh = load_workbook(built / builder.WORKBOOK_NAME)
+    assert committed.sheetnames == fresh.sheetnames
+    for title in committed.sheetnames:
+        assert _sheet_snapshot(committed[title]) == _sheet_snapshot(fresh[title]), title
+
+
+def test_missing_openpyxl_is_clean_error(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    monkeypatch.setattr(builder, "MISSING_DEPENDENCY", "openpyxl is not installed")
+    assert builder.main(["-o", str(tmp_path)]) == 1
+    assert capsys.readouterr().err == "error: openpyxl is not installed\n"
+    assert not any(tmp_path.iterdir())

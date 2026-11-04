@@ -108,3 +108,12 @@ def test_markdown_template_matches_docx_sections() -> None:
     for (heading, tables), section in zip(markdown, mod.SECTIONS):
         if tables and isinstance(section.body, mod.TableBody):
             assert tables[0] == list(section.body.headers), heading
+
+
+def test_missing_python_docx_is_clean_error(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    monkeypatch.setattr(mod, "MISSING_DEPENDENCY", "python-docx is not installed")
+    assert mod.main(["-o", str(tmp_path)]) == 1
+    assert capsys.readouterr().err == "error: python-docx is not installed\n"
+    assert not any(tmp_path.iterdir())

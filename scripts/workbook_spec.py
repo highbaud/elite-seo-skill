@@ -22,7 +22,13 @@ TAB_GSC_OPPORTUNITIES = "GSC_Opportunities"
 TAB_CANNIBALIZATION = "Cannibalization"
 TAB_CONTENT_DECAY = "Content_Decay"
 
+FIRST_DATA_ROW = 2  # row 1 holds the headers
 LAST_DATA_ROW = 500  # validations, fill-down formulas and formatting run to this row
+
+# Issue_Register priority bands: a score at or above each minimum lands in that band.
+FIX_NOW_MIN = 14
+NEXT_SPRINT_MIN = 10
+BACKLOG_MIN = 6
 
 
 @dataclass(frozen=True)
@@ -313,7 +319,13 @@ def column_letter(title: str, header: str) -> str:
     headers = _HEADERS[title]
     if header not in headers:
         raise ValueError(f"Tab {title!r} has no column {header!r}")
-    index = headers.index(header) + 1
+    return column_letter_for_index(headers.index(header) + 1)
+
+
+def column_letter_for_index(index: int) -> str:
+    """Spreadsheet column letter for a 1-based column index (1 -> A, 27 -> AA)."""
+    if index < 1:
+        raise ValueError(f"Column index must be >= 1, got {index}")
     letters = ""
     while index:
         index, remainder = divmod(index - 1, 26)
@@ -336,7 +348,7 @@ def _dashboard_rows() -> tuple[Row, ...]:
     average = f'=IFERROR(ROUND(AVERAGE({_whole_column(issues, "Priority")}),1),"-")'
     return (
         ("Open issues", _count_if(issues, "Status", "Open"), "Total unresolved audit issues"),
-        ("Fix-now issues", _count_if(issues, "Priority Band", "Fix now"), "Priority band 14+"),
+        ("Fix-now issues", _count_if(issues, "Priority Band", "Fix now"), f"Priority band {FIX_NOW_MIN}+"),
         ("Technical issues", _count_if(issues, "Module", "Technical"), "Crawl/index/render/speed/schema"),
         ("Content issues", _count_if(issues, "Module", "Content"), "Intent, quality, decay, cannibalization"),
         ("Authority issues", _count_if(issues, "Module", "Authority"), "Links, mentions, PR, reputation"),
@@ -365,7 +377,10 @@ def _priority_formula(guarded: bool) -> str:
 def _band_formula(guarded: bool) -> str:
     """Priority band template (``{row}`` placeholder); ``guarded`` blanks it for empty rows."""
     score = column_letter("Issue_Register", "Priority") + "{row}"
-    band = f'IF({score}>=14,"Fix now",IF({score}>=10,"Next sprint",IF({score}>=6,"Backlog","Monitor")))'
+    band = (
+        f'IF({score}>={FIX_NOW_MIN},"Fix now",IF({score}>={NEXT_SPRINT_MIN},"Next sprint",'
+        f'IF({score}>={BACKLOG_MIN},"Backlog","Monitor")))'
+    )
     return f'=IF({score}="","",{band})' if guarded else f"={band}"
 
 
@@ -390,7 +405,7 @@ def _issue_rows() -> tuple[Row, ...]:
     )
     formulas = {"Priority": _priority_formula(False), "Priority Band": _band_formula(False)}
     rows: list[Row] = []
-    for row_number, seed in enumerate(seeds, start=2):
+    for row_number, seed in enumerate(seeds, start=FIRST_DATA_ROW):
         values = {**seed, **{h: f.replace("{row}", str(row_number)) for h, f in formulas.items()}}
         unknown = set(values) - set(ISSUE_HEADERS)
         if unknown:
@@ -400,11 +415,13 @@ def _issue_rows() -> tuple[Row, ...]:
 
 
 def _issue_register_spec() -> SheetSpec:
-    guarded_start = 5  # rows 2-4 carry the seed issues; later rows are guarded fill-down formulas
+    seed_rows = _issue_rows()
+    # Seed issues fill the first data rows; every row after them gets guarded fill-down formulas.
+    guarded_start = FIRST_DATA_ROW + len(seed_rows)
     return SheetSpec(
         title="Issue_Register",
         headers=ISSUE_HEADERS,
-        rows=_issue_rows(),
+        rows=seed_rows,
         validations=(
             ListValidation(
                 ("Module",),
