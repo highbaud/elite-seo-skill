@@ -59,3 +59,6 @@ Streams (Sonnet agents, same worktree, disjoint files, agents do NOT commit / NO
   If session dies before agents finish: check `git status`; review each script vs its spec in this file; run `python3 -m pytest -q`.
 - Stream C (docx) DONE + committed; verified identical (49 paras, 5 tables), 7 tests pass.
 - Stream A (analyzer) DONE + committed; old vs new byte-identical on 1800 random rows; 29 tests pass.
+- Stream B (builder) DONE + committed c1f255d: assets identical (31 CSV byte-equal, xlsx 0 diffs). I unified CSV writing via kit_common.write_csv(lineterminator=).
+- Extra fixes (me): analyzer --out-dir alias; builders catch OSError. 49 tests pass.
+- NEXT: resolve all review items w/ notes (desloppify plan resolve <id> --note ... --confirm), then rescan.
