@@ -32,12 +32,18 @@ import csv
 import math
 import sys
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal, get_args
 
 from kit_common import CellValue, write_csv
-from workbook_spec import headers_for
+from workbook_spec import (
+    TAB_CANNIBALIZATION,
+    TAB_CONTENT_DECAY,
+    TAB_GSC_OPPORTUNITIES,
+    headers_for,
+)
 
 # Rough expected CTR by position bucket (industry-typical medians; used only to
 # flag underperformers, never reported as a benchmark to clients).
@@ -53,11 +59,12 @@ DECAY_MIN_PREV_CLICKS = 10     # too few previous clicks to judge decay
 
 REQUIRED_COLUMNS: tuple[str, ...] = ("query", "page", "clicks", "impressions", "position")
 
-TAB_OPPORTUNITIES = "GSC_Opportunities"
-TAB_CANNIBALIZATION = "Cannibalization"
-TAB_DECAY = "Content_Decay"
+MAX_PROBLEM_EXAMPLES = 5       # skipped-row reasons kept per file
 
-TabRow = list[CellValue]
+Mode = Literal["opportunities", "cannibalization", "decay", "all"]
+
+# One workbook row keyed by column header; columns the analyzer leaves blank are omitted.
+TabRow = dict[str, CellValue]
 
 
 class GscInputError(ValueError):
@@ -77,6 +84,8 @@ class GscRow:
 class ReadResult:
     rows: list[GscRow]
     skipped: int  # malformed rows that were dropped
+    # First few skipped rows as (CSV file line number, reason); the header is line 1.
+    problems: tuple[tuple[int, str], ...] = ()
 
 
 @dataclass
@@ -98,18 +107,24 @@ class PageTotals:
         return self.position_weighted_sum / self.impressions if self.impressions else 0.0
 
 
-def _parse_number(cell: str | None, *, default: float | None) -> float:
-    """Parse a numeric cell; blank uses ``default`` (None means blank is an error)."""
+def _parse_number(cell: str | None, column: str, *, default: float | None) -> float:
+    """Parse a numeric cell; blank uses ``default`` (None means blank is an error).
+
+    Raises ValueError with a message naming ``column`` and the offending value.
+    """
     if cell is None:
-        raise ValueError("missing cell")
+        raise ValueError(f"missing {column}")
     text = cell.strip()
     if not text:
         if default is None:
-            raise ValueError("blank cell")
+            raise ValueError(f"blank {column}")
         return default
-    value = float(text)
+    try:
+        value = float(text)
+    except ValueError:
+        raise ValueError(f"unparsable number {text!r} in {column}") from None
     if not math.isfinite(value):
-        raise ValueError("non-finite number")
+        raise ValueError(f"non-finite number {text!r} in {column}")
     return value
 
 
@@ -117,6 +132,7 @@ def read_rows(path: str | Path) -> ReadResult:
     """Read a GSC export. Raises GscInputError for missing columns, OSError for I/O."""
     rows: list[GscRow] = []
     skipped = 0
+    problems: list[tuple[int, str]] = []
     try:
         with open(path, newline="", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
@@ -129,23 +145,25 @@ def read_rows(path: str | Path) -> ReadResult:
                     query, page = raw[field_map["query"]], raw[field_map["page"]]
                     if query is None or page is None:
                         raise ValueError("short row")
-                    position = _parse_number(raw[field_map["position"]], default=None)
+                    position = _parse_number(raw[field_map["position"]], "position", default=None)
                     if position <= 0:
                         raise ValueError("position must be >= 1")
                     rows.append(GscRow(
                         query=query.strip(),
                         page=page.strip(),
-                        clicks=_parse_number(raw[field_map["clicks"]], default=0.0),
-                        impressions=_parse_number(raw[field_map["impressions"]], default=0.0),
+                        clicks=_parse_number(raw[field_map["clicks"]], "clicks", default=0.0),
+                        impressions=_parse_number(raw[field_map["impressions"]], "impressions", default=0.0),
                         position=position,
                     ))
-                except ValueError:
+                except ValueError as exc:
                     skipped += 1
+                    if len(problems) < MAX_PROBLEM_EXAMPLES:
+                        problems.append((reader.line_num, str(exc)))
     except UnicodeDecodeError as exc:
         raise GscInputError(f"{path}: not a UTF-8 CSV ({exc.reason})") from exc
     except csv.Error as exc:
         raise GscInputError(f"{path}: invalid CSV ({exc})") from exc
-    return ReadResult(rows, skipped)
+    return ReadResult(rows, skipped, tuple(problems))
 
 
 def expected_ctr(position: float) -> float:
@@ -155,24 +173,31 @@ def expected_ctr(position: float) -> float:
 
 def opportunity_rows(rows: Sequence[GscRow]) -> list[TabRow]:
     """Striking-distance and position-adjusted low-CTR rows for GSC_Opportunities."""
-    out: list[TabRow] = []
+    found: list[tuple[int, TabRow]] = []
     lo, hi = STRIKING_DISTANCE
+    striking_label = f"Striking distance (pos {lo:g}-{hi:g})"
     for r in rows:
         if r.impressions < MIN_IMPRESSIONS:
             continue
         ctr = r.clicks / r.impressions
         if lo <= r.position <= hi:
-            out.append([r.query, r.page, int(r.clicks), int(r.impressions),
-                        f"{ctr:.2%}", round(r.position, 1),
-                        "Striking distance (pos 4-15)",
-                        "Add internal links, improve answer block, refresh proof", "SEO"])
-        elif r.position <= 10 and ctr < expected_ctr(r.position) * CTR_UNDERPERFORM_RATIO:
-            out.append([r.query, r.page, int(r.clicks), int(r.impressions),
-                        f"{ctr:.2%}", round(r.position, 1),
-                        "High impressions low CTR for position",
-                        "Rewrite title/meta; log in Experiment_Log and judge CTR at stable position", "SEO"])
-    out.sort(key=lambda row: -int(row[3] or 0))
-    return out
+            opportunity, action = (striking_label,
+                                   "Add internal links, improve answer block, refresh proof")
+        # Low-CTR flagging covers positions above (better than) striking distance;
+        # striking-distance rows are already reported by the branch above.
+        elif r.position < lo and ctr < expected_ctr(r.position) * CTR_UNDERPERFORM_RATIO:
+            opportunity, action = ("High impressions low CTR for position",
+                                   "Rewrite title/meta; log in Experiment_Log and judge CTR at stable position")
+        else:
+            continue
+        found.append((int(r.impressions), {
+            "Query": r.query, "Page": r.page,
+            "Clicks": int(r.clicks), "Impressions": int(r.impressions),
+            "CTR": f"{ctr:.2%}", "Position": round(r.position, 1),
+            "Opportunity Type": opportunity, "Action": action, "Owner": "SEO",
+        }))
+    found.sort(key=lambda item: -item[0])
+    return [row for _, row in found]
 
 
 def cannibalization_rows(rows: Sequence[GscRow]) -> list[TabRow]:
@@ -181,7 +206,7 @@ def cannibalization_rows(rows: Sequence[GscRow]) -> list[TabRow]:
     for r in rows:
         if r.impressions >= MIN_IMPRESSIONS / 2:
             by_query[r.query].append(r)
-    out: list[TabRow] = []
+    found: list[tuple[str, TabRow]] = []
     for query, group in by_query.items():
         if len(group) < 2:
             continue
@@ -189,12 +214,14 @@ def cannibalization_rows(rows: Sequence[GscRow]) -> list[TabRow]:
         group.sort(key=lambda g: -g.impressions)
         top, second = group[0], group[1]
         if second.impressions / total >= CANNIBAL_SHARE:
-            out.append([query, top.page, second.page,
-                        "Review: true duplicate / intent split / format mismatch",
-                        top.page,
-                        "Diagnose with Cannibalization prompt before merging", ""])
-    out.sort(key=lambda row: str(row[0]))
-    return out
+            found.append((query, {
+                "Keyword / Intent": query, "URL 1": top.page, "URL 2": second.page,
+                "Conflict Type": "Review: true duplicate / intent split / format mismatch",
+                "Winning URL": top.page,
+                "Decision": "Diagnose with Cannibalization prompt before merging",
+            }))
+    found.sort(key=lambda item: item[0])
+    return [row for _, row in found]
 
 
 def _totals_by_page(rows: Sequence[GscRow]) -> dict[str, PageTotals]:
@@ -218,17 +245,29 @@ def decay_rows(prev_rows: Sequence[GscRow], cur_rows: Sequence[GscRow]) -> list[
                 rank_change = f"{before.average_position:.1f} -> {after.average_position:.1f}"
             else:
                 rank_change = "dropped out"
-            flagged.append((before.clicks - after.clicks,
-                            [page, "", int(after.clicks), int(before.clicks), f"{-drop:.0%}",
-                             rank_change, "High", "", "", "Refresh"]))
+            flagged.append((before.clicks - after.clicks, {
+                "URL": page, "Clicks 90d": int(after.clicks),
+                "Clicks Previous 90d": int(before.clicks), "Delta": f"{-drop:.0%}",
+                "Rank Change": rank_change, "Freshness Need": "High", "Action": "Refresh",
+            }))
     flagged.sort(key=lambda item: item[0], reverse=True)
     return [row for _, row in flagged]
 
 
-def write_tab(out_dir: Path, title: str, rows: Sequence[TabRow]) -> Path:
-    """Write ``rows`` under the workbook headers for tab ``title``; return the file path."""
+def write_tab(out_dir: Path, title: str, rows: Sequence[Mapping[str, CellValue]]) -> Path:
+    """Write ``rows`` under the workbook headers for tab ``title``; return the file path.
+
+    Each row maps header name to value; headers a row omits are written blank. A key
+    that is not a header of the tab raises ValueError.
+    """
+    headers = headers_for(title)
+    known = set(headers)
+    for row in rows:
+        unknown = [key for key in row if key not in known]
+        if unknown:
+            raise ValueError(f"{title}: unknown column(s) {unknown}; headers are {headers}")
     path = out_dir / f"{title}_filled.csv"
-    write_csv(path, headers_for(title), rows)
+    write_csv(path, headers, [[row.get(h, "") for h in headers] for row in rows])
     return path
 
 
@@ -236,10 +275,13 @@ def _load(path: str) -> list[GscRow]:
     result = read_rows(path)
     if result.skipped:
         print(f"{Path(path).name}: skipped {result.skipped} malformed row(s)", file=sys.stderr)
+        for line_number, reason in result.problems:
+            print(f"  line {line_number}: {reason}", file=sys.stderr)
     return result.rows
 
 
-def _run(mode: str, files: Sequence[str], out_dir: Path) -> None:
+def generate_tabs(mode: Mode, files: Sequence[str], out_dir: Path) -> None:
+    """Read the export(s) and write the filled CSV tab(s) selected by ``mode``."""
     if mode in ("decay", "all"):
         prev_rows, cur_rows = _load(files[0]), _load(files[1])
     else:
@@ -248,7 +290,7 @@ def _run(mode: str, files: Sequence[str], out_dir: Path) -> None:
 
     if mode in ("opportunities", "all"):
         rows = opportunity_rows(cur_rows)
-        write_tab(out_dir, TAB_OPPORTUNITIES, rows)
+        write_tab(out_dir, TAB_GSC_OPPORTUNITIES, rows)
         print(f"opportunities: {len(rows)} rows")
     if mode in ("cannibalization", "all"):
         rows = cannibalization_rows(cur_rows)
@@ -256,28 +298,34 @@ def _run(mode: str, files: Sequence[str], out_dir: Path) -> None:
         print(f"cannibalization: {len(rows)} queries")
     if mode in ("decay", "all"):
         rows = decay_rows(prev_rows, cur_rows)
-        write_tab(out_dir, TAB_DECAY, rows)
+        write_tab(out_dir, TAB_CONTENT_DECAY, rows)
         print(f"decay: {len(rows)} pages flagged")
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    """CLI entry point; returns the process exit code (argparse exits with 2 on usage errors)."""
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    """Parse and validate the command line (argparse exits with 2 on usage errors)."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("mode", choices=["opportunities", "cannibalization", "decay", "all"])
+    ap.add_argument("mode", choices=get_args(Mode))
     ap.add_argument("files", nargs="+",
                     help="GSC export CSV(s): one file for opportunities/cannibalization; "
                          "previous then current for decay/all")
-    ap.add_argument("-o", "--out-dir", "--out", dest="out", default=".",
+    ap.add_argument("-o", "--out-dir", dest="out_dir", type=Path, default=Path("."),
                     help="output directory (default: current directory)")
+    ap.add_argument("--out", dest="out_dir", type=Path, help=argparse.SUPPRESS)  # deprecated alias
     args = ap.parse_args(argv)
 
     expected = 2 if args.mode in ("decay", "all") else 1
     if len(args.files) != expected:
         ap.error(f"{args.mode} takes exactly {expected} file(s), got {len(args.files)}"
                  + (" (previous.csv current.csv)" if expected == 2 else ""))
+    return args
 
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """CLI entry point; returns the process exit code."""
+    args = parse_args(argv)
     try:
-        _run(args.mode, args.files, Path(args.out))
+        generate_tabs(args.mode, args.files, args.out_dir)
     except (GscInputError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
