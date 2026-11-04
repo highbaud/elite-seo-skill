@@ -68,3 +68,5 @@ Streams (Sonnet agents, same worktree, disjoint files, agents do NOT commit / NO
 strict 70.1 | overall 79.1 | objective 98.8 (from 42.2). 3 open = sys_exit_in_library false positives on `sys.exit(main())` in __main__ guard (desloppify detector ignores main guard; _CLI_FILENAMES only). Left as-is deliberately (not gaming via raise SystemExit). Tell user; upstream issue needs their OK.
 Subjective scores are stale (pre-refactor). NEXT: re-review all dims: `desloppify review --run-batches --dry-run --force-review-rerun` -> Sonnet agents, strict "must Write file" prompt, waves of 5.
 - Re-review run dir: .desloppify/subagents/runs/20261104_185923 (20 batches, same dim order as before). Wave1 (1-5) launched. Then: desloppify review --import-run <dir> --scan-after-import
+- Re-review wave1 DONE: xmodule 93, high_eleg 86, convention 88, errors 92, naming 86. Wave2 (6-10) launched.
+- Git: shallow clone lacked origin/desloppify-quality tracking ref (hook false alarms). Fixed with extra fetch refspec + branch -u.
