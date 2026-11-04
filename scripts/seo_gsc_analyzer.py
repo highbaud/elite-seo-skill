@@ -1,11 +1,18 @@
 """GSC export analyzer for the Elite SEO Operating Kit.
 
 Turns raw Google Search Console performance exports into pre-filled rows for the
-workbook tabs GSC_Opportunities, Cannibalization, and Content_Decay.
+workbook tabs GSC_Opportunities, Cannibalization, and Content_Decay. Column
+headers come from workbook_spec, so the output always matches the workbook.
 
 Input format: CSV export with columns (case-insensitive, extra columns ignored):
     query, page, clicks, impressions, ctr, position
 GSC's own "Queries + Pages" export works; so does any tool export with those headers.
+Rows that are short, have unparsable numbers, or have a blank/non-positive position
+(GSC positions start at 1) are skipped and reported on stderr. Blank clicks or
+impressions count as 0.
+
+Decay compares two equal-length periods (previous, then current). The workbook's
+Content_Decay tab labels assume 90-day windows, so export 90 days for each.
 
 Usage:
     python seo_gsc_analyzer.py opportunities current.csv -o out_dir
@@ -13,176 +20,264 @@ Usage:
     python seo_gsc_analyzer.py decay previous.csv current.csv -o out_dir
     python seo_gsc_analyzer.py all previous.csv current.csv -o out_dir
 
+opportunities/cannibalization take exactly one file; decay/all take exactly two.
+
 No third-party dependencies.
 """
 
+from __future__ import annotations
+
 import argparse
 import csv
+import math
 import sys
 from collections import defaultdict
+from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
+
+from kit_common import CsvValue, write_csv
+from workbook_spec import headers_for
 
 # Rough expected CTR by position bucket (industry-typical medians; used only to
 # flag underperformers, never reported as a benchmark to clients).
-EXPECTED_CTR = {1: 0.28, 2: 0.15, 3: 0.10, 4: 0.07, 5: 0.05,
-                6: 0.04, 7: 0.03, 8: 0.025, 9: 0.02, 10: 0.018}
+EXPECTED_CTR: dict[int, float] = {1: 0.28, 2: 0.15, 3: 0.10, 4: 0.07, 5: 0.05,
+                                  6: 0.04, 7: 0.03, 8: 0.025, 9: 0.02, 10: 0.018}
 
 MIN_IMPRESSIONS = 100          # ignore noise rows
-STRIKING_DISTANCE = (4.0, 15.0)
+STRIKING_DISTANCE: tuple[float, float] = (4.0, 15.0)
 CTR_UNDERPERFORM_RATIO = 0.5   # flag if CTR < 50% of position-expected
 CANNIBAL_SHARE = 0.20          # 2nd page needs >=20% of query impressions
 DECAY_DROP = 0.20              # >=20% click drop flags decay
+DECAY_MIN_PREV_CLICKS = 10     # too few previous clicks to judge decay
+
+REQUIRED_COLUMNS: tuple[str, ...] = ("query", "page", "clicks", "impressions", "position")
+
+TAB_OPPORTUNITIES = "GSC_Opportunities"
+TAB_CANNIBALIZATION = "Cannibalization"
+TAB_DECAY = "Content_Decay"
+
+TabRow = list[CsvValue]
 
 
-def read_rows(path):
-    rows = []
-    with open(path, newline="", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        field_map = {name.strip().lower(): name for name in reader.fieldnames or []}
-        required = ["query", "page", "clicks", "impressions", "position"]
-        missing = [c for c in required if c not in field_map]
-        if missing:
-            sys.exit(f"{path}: missing columns {missing}. Found: {reader.fieldnames}")
-        for raw in reader:
-            try:
-                rows.append({
-                    "query": raw[field_map["query"]].strip(),
-                    "page": raw[field_map["page"]].strip(),
-                    "clicks": float(raw[field_map["clicks"]] or 0),
-                    "impressions": float(raw[field_map["impressions"]] or 0),
-                    "position": float(raw[field_map["position"]] or 0),
-                })
-            except ValueError:
-                continue
-    return rows
+class GscInputError(ValueError):
+    """The GSC export is unusable (missing columns, undecodable file)."""
 
 
-def expected_ctr(position):
+@dataclass(frozen=True)
+class GscRow:
+    query: str
+    page: str
+    clicks: float
+    impressions: float
+    position: float
+
+
+@dataclass(frozen=True)
+class ReadResult:
+    rows: list[GscRow]
+    skipped: int  # malformed rows that were dropped
+
+
+@dataclass
+class PageTotals:
+    """Per-page aggregate over one period."""
+
+    clicks: float = 0.0
+    impressions: float = 0.0
+    position_weighted_sum: float = 0.0  # sum of position * impressions
+
+    def add(self, row: GscRow) -> None:
+        self.clicks += row.clicks
+        self.impressions += row.impressions
+        self.position_weighted_sum += row.position * row.impressions
+
+    @property
+    def average_position(self) -> float:
+        """Impression-weighted average position (0.0 when there are no impressions)."""
+        return self.position_weighted_sum / self.impressions if self.impressions else 0.0
+
+
+def _parse_number(cell: str | None, *, default: float | None) -> float:
+    """Parse a numeric cell; blank uses ``default`` (None means blank is an error)."""
+    if cell is None:
+        raise ValueError("missing cell")
+    text = cell.strip()
+    if not text:
+        if default is None:
+            raise ValueError("blank cell")
+        return default
+    value = float(text)
+    if not math.isfinite(value):
+        raise ValueError("non-finite number")
+    return value
+
+
+def read_rows(path: str | Path) -> ReadResult:
+    """Read a GSC export. Raises GscInputError for missing columns, OSError for I/O."""
+    rows: list[GscRow] = []
+    skipped = 0
+    try:
+        with open(path, newline="", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+            field_map = {name.strip().lower(): name for name in reader.fieldnames or []}
+            missing = [c for c in REQUIRED_COLUMNS if c not in field_map]
+            if missing:
+                raise GscInputError(f"{path}: missing columns {missing}. Found: {reader.fieldnames}")
+            for raw in reader:
+                try:
+                    query, page = raw[field_map["query"]], raw[field_map["page"]]
+                    if query is None or page is None:
+                        raise ValueError("short row")
+                    position = _parse_number(raw[field_map["position"]], default=None)
+                    if position <= 0:
+                        raise ValueError("position must be >= 1")
+                    rows.append(GscRow(
+                        query=query.strip(),
+                        page=page.strip(),
+                        clicks=_parse_number(raw[field_map["clicks"]], default=0.0),
+                        impressions=_parse_number(raw[field_map["impressions"]], default=0.0),
+                        position=position,
+                    ))
+                except ValueError:
+                    skipped += 1
+    except UnicodeDecodeError as exc:
+        raise GscInputError(f"{path}: not a UTF-8 CSV ({exc.reason})") from exc
+    except csv.Error as exc:
+        raise GscInputError(f"{path}: invalid CSV ({exc})") from exc
+    return ReadResult(rows, skipped)
+
+
+def expected_ctr(position: float) -> float:
     bucket = min(10, max(1, round(position)))
     return EXPECTED_CTR[bucket]
 
 
-def opportunities(rows, out_dir):
-    """Striking-distance and position-adjusted low-CTR rows -> GSC_Opportunities."""
-    out = []
+def opportunity_rows(rows: Sequence[GscRow]) -> list[TabRow]:
+    """Striking-distance and position-adjusted low-CTR rows for GSC_Opportunities."""
+    out: list[TabRow] = []
+    lo, hi = STRIKING_DISTANCE
     for r in rows:
-        if r["impressions"] < MIN_IMPRESSIONS:
+        if r.impressions < MIN_IMPRESSIONS:
             continue
-        ctr = r["clicks"] / r["impressions"] if r["impressions"] else 0
-        lo, hi = STRIKING_DISTANCE
-        if lo <= r["position"] <= hi:
-            out.append([r["query"], r["page"], int(r["clicks"]), int(r["impressions"]),
-                        f"{ctr:.2%}", round(r["position"], 1),
+        ctr = r.clicks / r.impressions
+        if lo <= r.position <= hi:
+            out.append([r.query, r.page, int(r.clicks), int(r.impressions),
+                        f"{ctr:.2%}", round(r.position, 1),
                         "Striking distance (pos 4-15)",
                         "Add internal links, improve answer block, refresh proof", "SEO"])
-        elif r["position"] <= 10 and ctr < expected_ctr(r["position"]) * CTR_UNDERPERFORM_RATIO:
-            out.append([r["query"], r["page"], int(r["clicks"]), int(r["impressions"]),
-                        f"{ctr:.2%}", round(r["position"], 1),
+        elif r.position <= 10 and ctr < expected_ctr(r.position) * CTR_UNDERPERFORM_RATIO:
+            out.append([r.query, r.page, int(r.clicks), int(r.impressions),
+                        f"{ctr:.2%}", round(r.position, 1),
                         "High impressions low CTR for position",
                         "Rewrite title/meta; log in Experiment_Log and judge CTR at stable position", "SEO"])
-    out.sort(key=lambda x: -x[3])
-    write_csv(out_dir / "GSC_Opportunities_filled.csv",
-              ["Query", "Page", "Clicks", "Impressions", "CTR", "Position",
-               "Opportunity Type", "Action", "Owner"], out)
-    return len(out)
+    out.sort(key=lambda row: -int(row[3] or 0))
+    return out
 
 
-def cannibalization(rows, out_dir):
-    """Queries where 2+ pages each hold a meaningful impression share -> Cannibalization."""
-    by_query = defaultdict(list)
+def cannibalization_rows(rows: Sequence[GscRow]) -> list[TabRow]:
+    """Queries where 2+ pages each hold a meaningful impression share."""
+    by_query: defaultdict[str, list[GscRow]] = defaultdict(list)
     for r in rows:
-        if r["impressions"] >= MIN_IMPRESSIONS / 2:
-            by_query[r["query"]].append(r)
-    out = []
+        if r.impressions >= MIN_IMPRESSIONS / 2:
+            by_query[r.query].append(r)
+    out: list[TabRow] = []
     for query, group in by_query.items():
         if len(group) < 2:
             continue
-        total = sum(g["impressions"] for g in group)
-        group.sort(key=lambda g: -g["impressions"])
+        total = sum(g.impressions for g in group)
+        group.sort(key=lambda g: -g.impressions)
         top, second = group[0], group[1]
-        if second["impressions"] / total >= CANNIBAL_SHARE:
-            out.append([query, top["page"], second["page"],
+        if second.impressions / total >= CANNIBAL_SHARE:
+            out.append([query, top.page, second.page,
                         "Review: true duplicate / intent split / format mismatch",
-                        top["page"],
+                        top.page,
                         "Diagnose with Cannibalization prompt before merging", ""])
-    out.sort(key=lambda x: x[0])
-    write_csv(out_dir / "Cannibalization_filled.csv",
-              ["Keyword / Intent", "URL 1", "URL 2", "Conflict Type",
-               "Winning URL", "Decision", "Redirect / Canonical / Rewrite"], out)
-    return len(out)
+    out.sort(key=lambda row: str(row[0]))
+    return out
 
 
-def decay(prev_rows, cur_rows, out_dir):
-    """Pages losing >=20% clicks period-over-period -> Content_Decay."""
-    def by_page(rows):
-        agg = defaultdict(lambda: [0.0, 0.0, 0.0, 0.0])  # clicks, impr, pos*impr, impr for pos
-        for r in rows:
-            a = agg[r["page"]]
-            a[0] += r["clicks"]
-            a[1] += r["impressions"]
-            a[2] += r["position"] * r["impressions"]
-            a[3] += r["impressions"]
-        return agg
+def _totals_by_page(rows: Sequence[GscRow]) -> dict[str, PageTotals]:
+    totals: defaultdict[str, PageTotals] = defaultdict(PageTotals)
+    for r in rows:
+        totals[r.page].add(r)
+    return totals
 
-    prev, cur = by_page(prev_rows), by_page(cur_rows)
-    out = []
-    for page, p in prev.items():
-        if p[0] < 10:  # too few clicks to judge decay
+
+def decay_rows(prev_rows: Sequence[GscRow], cur_rows: Sequence[GscRow]) -> list[TabRow]:
+    """Pages losing >=20% clicks period-over-period, for Content_Decay."""
+    prev, cur = _totals_by_page(prev_rows), _totals_by_page(cur_rows)
+    flagged: list[tuple[float, TabRow]] = []
+    for page, before in prev.items():
+        if before.clicks < DECAY_MIN_PREV_CLICKS:
             continue
-        c = cur.get(page, [0.0, 0.0, 0.0, 0.0])
-        if p[0] == 0:
-            continue
-        drop = (p[0] - c[0]) / p[0]
+        after = cur.get(page, PageTotals())
+        drop = (before.clicks - after.clicks) / before.clicks
         if drop >= DECAY_DROP:
-            prev_pos = p[2] / p[3] if p[3] else 0
-            cur_pos = c[2] / c[3] if c[3] else 0
-            out.append([page, "", int(c[0]), int(p[0]), f"{-drop:.0%}",
-                        f"{prev_pos:.1f} -> {cur_pos:.1f}" if cur_pos else "dropped out",
-                        "High", "", "", "Refresh"])
-    out.sort(key=lambda x: x[3] - x[2], reverse=True)
-    write_csv(out_dir / "Content_Decay_filled.csv",
-              ["URL", "Page Type", "Clicks 90d", "Clicks Previous 90d", "Delta",
-               "Rank Change", "Freshness Need", "Backlinks", "Conversions", "Action"], out)
-    return len(out)
+            if after.impressions > 0:
+                rank_change = f"{before.average_position:.1f} -> {after.average_position:.1f}"
+            else:
+                rank_change = "dropped out"
+            flagged.append((before.clicks - after.clicks,
+                            [page, "", int(after.clicks), int(before.clicks), f"{-drop:.0%}",
+                             rank_change, "High", "", "", "Refresh"]))
+    flagged.sort(key=lambda item: item[0], reverse=True)
+    return [row for _, row in flagged]
 
 
-def write_csv(path, headers, rows):
-    with open(path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(headers)
-        writer.writerows(rows)
+def write_tab(out_dir: Path, title: str, rows: Sequence[TabRow]) -> Path:
+    """Write ``rows`` under the workbook headers for tab ``title``; return the file path."""
+    path = out_dir / f"{title}_filled.csv"
+    write_csv(path, headers_for(title), rows)
+    return path
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("mode", choices=["opportunities", "cannibalization", "decay", "all"])
-    ap.add_argument("files", nargs="+", help="GSC export CSV(s); decay/all need previous then current")
-    ap.add_argument("-o", "--out", default=".", help="output directory")
-    args = ap.parse_args()
+def _load(path: str) -> list[GscRow]:
+    result = read_rows(path)
+    if result.skipped:
+        print(f"{Path(path).name}: skipped {result.skipped} malformed row(s)", file=sys.stderr)
+    return result.rows
 
-    out_dir = Path(args.out)
+
+def _run(mode: str, files: Sequence[str], out_dir: Path) -> None:
+    if mode in ("decay", "all"):
+        prev_rows, cur_rows = _load(files[0]), _load(files[1])
+    else:
+        prev_rows, cur_rows = [], _load(files[0])
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    if args.mode in ("decay", "all") and len(args.files) < 2:
-        sys.exit("decay/all need two files: previous.csv current.csv")
+    if mode in ("opportunities", "all"):
+        rows = opportunity_rows(cur_rows)
+        write_tab(out_dir, TAB_OPPORTUNITIES, rows)
+        print(f"opportunities: {len(rows)} rows")
+    if mode in ("cannibalization", "all"):
+        rows = cannibalization_rows(cur_rows)
+        write_tab(out_dir, TAB_CANNIBALIZATION, rows)
+        print(f"cannibalization: {len(rows)} queries")
+    if mode in ("decay", "all"):
+        rows = decay_rows(prev_rows, cur_rows)
+        write_tab(out_dir, TAB_DECAY, rows)
+        print(f"decay: {len(rows)} pages flagged")
 
-    if args.mode == "decay":
-        prev_rows, cur_rows = read_rows(args.files[0]), read_rows(args.files[1])
-        print(f"decay: {decay(prev_rows, cur_rows, out_dir)} pages flagged")
-        return
 
-    if args.mode == "all":
-        prev_rows, cur_rows = read_rows(args.files[0]), read_rows(args.files[1])
-        print(f"opportunities: {opportunities(cur_rows, out_dir)} rows")
-        print(f"cannibalization: {cannibalization(cur_rows, out_dir)} queries")
-        print(f"decay: {decay(prev_rows, cur_rows, out_dir)} pages flagged")
-        return
+def main(argv: Sequence[str] | None = None) -> None:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("mode", choices=["opportunities", "cannibalization", "decay", "all"])
+    ap.add_argument("files", nargs="+",
+                    help="GSC export CSV(s): one file for opportunities/cannibalization; "
+                         "previous then current for decay/all")
+    ap.add_argument("-o", "--out", default=".", help="output directory")
+    args = ap.parse_args(argv)
 
-    rows = read_rows(args.files[0])
-    if args.mode == "opportunities":
-        print(f"opportunities: {opportunities(rows, out_dir)} rows")
-    else:
-        print(f"cannibalization: {cannibalization(rows, out_dir)} queries")
+    expected = 2 if args.mode in ("decay", "all") else 1
+    if len(args.files) != expected:
+        ap.error(f"{args.mode} takes exactly {expected} file(s), got {len(args.files)}"
+                 + (" (previous.csv current.csv)" if expected == 2 else ""))
+
+    try:
+        _run(args.mode, args.files, Path(args.out))
+    except (GscInputError, OSError) as exc:
+        sys.exit(f"error: {exc}")
 
 
 if __name__ == "__main__":
