@@ -90,3 +90,5 @@ Remaining gap = subjective (stale, pre-cycle-2). NEXT: re-review #3 (desloppify 
 - R3 wave1 DONE (xmodule 93, high_eleg 86, convention 88, errors 90, naming 90). Wave2 launched.
 - R3 wave2 DONE (abstraction 93, deps 92, low_eleg 88, mid_eleg 90.5, test 88). Wave3 launched.
 - R3 wave3 DONE (api 87, authz 96, ai_debt 93, migration 94, pkg 90). Wave4 launched.
+
+## Cycle 3 (after review #3 import): strict 92.1. 13 new review items.
