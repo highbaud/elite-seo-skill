@@ -92,3 +92,6 @@ Remaining gap = subjective (stale, pre-cycle-2). NEXT: re-review #3 (desloppify 
 - R3 wave3 DONE (api 87, authz 96, ai_debt 93, migration 94, pkg 90). Wave4 launched.
 
 ## Cycle 3 (after review #3 import): strict 92.1. 13 new review items.
+- Cycle 3 DONE: commits 19f4215, 38268a4, 027447a, 08bb6a4. All 13 resolved + boilerplate dup (run_builder). strict 92.1, objective 100.
+- Cannibalization bug fixed (aggregate per query+page). Builders: missing deps -> clean error. xlsx contract test.
+- NEXT: review #4 to credit cycle-3 fixes.
