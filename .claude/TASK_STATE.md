@@ -21,7 +21,13 @@ strict 10.5 | objective 42.2 | code quality 81.8 | dup 100 | file health 80 | se
 34 open issues. Subjective dims unassessed (0%).
 
 ## Progress log
-- [ ] subjective review (blind batches via subagents)
+- [x] subjective review: 20/20 batches imported (`--import-run ... --scan-after-import`). 37 review items added.
+  Post-review: strict 64.9 | mechanical pool 42.2 | subjective pool 72.5
+  Subj: abstraction 90, ai_debt 89, api 70, authz 96, contracts 79, convention 82, xmodule 82, deps 88,
+        design 78, errors 68, high_eleg 74, incomplete_mig 96, init_coupling 95, logic 82, low_eleg 68,
+        mid_eleg 71, naming 78, pkg_org 88, test_strategy 22, type_safety 38
+  Biggest drags: test health 0% (-13.3), type safety 38 (-4.5), mid elegance (-3.9), high elegance (-3.5)
+  Do NOT rescan mid-queue (regenerates IDs, breaks triage). Finish queue first.
 - [ ] triage
 - [ ] execute queue
 
