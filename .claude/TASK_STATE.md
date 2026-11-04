@@ -45,3 +45,13 @@ strict 10.5 | objective 42.2 | code quality 81.8 | dup 100 | file health 80 | se
 - Contract: SKILL.md:48 + README.md:58 say "edit generator scripts, never generated files". Extracting build_docs md => must update both docs. Tell user (authoring workflow change).
 - pytest NOT installed (needed for test health; pip install pytest, dev-only).
 - BUG to fix: seo_gsc_analyzer read_rows: blank position -> 0.0 -> treated as rank 1 (b11).
+
+## Execute phase plan (51 open: 37 review + 14 mechanical)
+Shared modules (me, DONE): scripts/kit_common.py (SKILL_ROOT/ASSETS_DIR/CSV_TEMPLATE_DIR, atomic_write, write_csv),
+scripts/workbook_spec.py (STUB: headers_for(title) for 3 analyzer tabs), tests/conftest.py (adds scripts/ to sys.path). pytest installed.
+Decision: references/kit/*.md become hand-edited source; build_docs() removed (verified identical output first). Update README.md + SKILL.md + kit README paths (me).
+Streams (Sonnet agents, same worktree, disjoint files, agents do NOT commit / NOT run desloppify resolve):
+- A analyzer: owns scripts/seo_gsc_analyzer.py, tests/test_seo_gsc_analyzer.py. Imports workbook_spec.headers_for, kit_common.write_csv.
+- B builder: owns scripts/build_elite_seo_operating_kit.py, scripts/workbook_spec.py (fill all tabs, keep headers_for API), tests/test_build_kit.py. Must reproduce assets byte-identical (CSVs) / content-identical (xlsx).
+- C docx: owns scripts/build_seo_report_docx.py, tests/test_build_report_docx.py.
+- Me after: requirements*.txt, README/SKILL.md/kit README, contract test, review, resolve items, commit, rescan.
