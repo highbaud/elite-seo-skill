@@ -35,13 +35,23 @@ def atomic_write(path: Path, write: Callable[[Path], None]) -> None:
         raise
 
 
-def write_csv(path: Path, headers: Sequence[str], rows: Iterable[Sequence[CsvValue]]) -> None:
-    """Atomically write a UTF-8 CSV with a header row. ``None`` cells become empty strings."""
+def write_csv(
+    path: Path,
+    headers: Sequence[CsvValue],
+    rows: Iterable[Sequence[CsvValue]],
+    *,
+    lineterminator: str = "\r\n",
+) -> None:
+    """Atomically write a UTF-8 CSV with a header row. ``None`` cells become empty strings.
+
+    The default line ending is the csv module's CRLF. The committed templates under
+    assets/csv-templates/ use LF, so the workbook builder passes ``lineterminator="\n"``.
+    """
 
     def _write(tmp_path: Path) -> None:
         with tmp_path.open("w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(headers)
+            writer = csv.writer(f, lineterminator=lineterminator)
+            writer.writerow(["" if value is None else value for value in headers])
             writer.writerows(["" if value is None else value for value in row] for row in rows)
 
     atomic_write(path, _write)
