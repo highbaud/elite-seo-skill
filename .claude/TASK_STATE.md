@@ -77,3 +77,4 @@ Subjective scores are stale (pre-refactor). NEXT: re-review all dims: `desloppif
 strict 80.5. Subj: abstraction 93, ai_debt 92, api 86.5, authz 96, contracts 90, convention 88, xmodule 93, deps 93, design 86, errors 92,
 high_eleg 86, incomplete_mig 96, init 91, logic 88, low_eleg 81, mid_eleg 82, naming 86, pkg_org 90, test_strategy 88, type_safety 86.
 18 new review items queued. Fix -> resolve (in order) -> rescan -> re-review.
+- Cycle2 me DONE (committed): shared alias/tab consts/issue seeds; md/docx sync test; docs tests; CI; builder -o. Analyzer agent running (owns analyzer + its tests).
