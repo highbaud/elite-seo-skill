@@ -47,3 +47,15 @@ def test_skipped_row_examples_capped(tmp_path):
     assert result.skipped == 9
     assert len(result.problems) == gsc.MAX_PROBLEM_EXAMPLES == 5
     assert result.problems[0][0] == 2
+
+
+def test_input_error_is_not_a_value_error():
+    # read_rows catches ValueError per row; file-level errors must stay distinct.
+    assert not issubclass(gsc.GscInputError, ValueError)
+
+
+def test_file_level_errors_surface_not_skipped(tmp_path):
+    bad = tmp_path / "bin.csv"
+    bad.write_bytes(b"query,page,clicks,impressions,position\n\xff\xfe,/a,1,2,3\n")
+    with pytest.raises(gsc.GscInputError, match="UTF-8"):
+        gsc.read_rows(bad)

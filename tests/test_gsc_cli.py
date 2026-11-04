@@ -71,7 +71,7 @@ def test_unwritable_output_dir_is_clean_error(tmp_path, capsys):
     assert capsys.readouterr().err.startswith("error:")
 
 
-@pytest.mark.parametrize("flag", ["-o", "--out", "--out-dir"])
+@pytest.mark.parametrize("flag", ["-o", "--out-dir"])
 def test_output_dir_flag_spellings(flag, tmp_path, capsys):
     cur = write_export(tmp_path / "current.csv", ["q1,/a,10,2000,0.5%,6"])
     out = tmp_path / flag.strip("-")
@@ -107,4 +107,27 @@ def test_mode_choices_derived_from_mode_type():
 def test_parse_args_defaults_and_path_type():
     args = gsc.parse_args(["opportunities", "a.csv"])
     assert args.out_dir == Path(".")
-    assert gsc.parse_args(["decay", "a", "b", "--out", "x"]).out_dir == Path("x")
+    assert gsc.parse_args(["decay", "a", "b", "--out-dir", "x"]).out_dir == Path("x")
+    assert gsc.parse_args(["decay", "a", "b"]).files == [Path("a"), Path("b")]
+
+
+@pytest.mark.parametrize("flag", ["--out", "--ou"])
+def test_removed_out_alias_and_abbreviations_rejected(flag, tmp_path, capsys):
+    with pytest.raises(SystemExit) as exc:
+        gsc.main(["opportunities", "a.csv", flag, str(tmp_path)])
+    assert exc.value.code == 2
+    assert "unrecognized arguments" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("mode", ["decay", "all"])
+def test_generate_tabs_requires_previous_for_decay_and_all(mode, tmp_path):
+    cur = write_export(tmp_path / "current.csv", ["q,/a,1,200,1%,5"])
+    with pytest.raises(gsc.GscInputError, match="previous"):
+        gsc.generate_tabs(mode, cur, tmp_path / "out")
+    assert not (tmp_path / "out").exists()
+
+
+def test_generate_tabs_direct_call_single_file_mode(tmp_path):
+    cur = write_export(tmp_path / "current.csv", ["q,/a,1,200,1%,5"])
+    gsc.generate_tabs("opportunities", cur, tmp_path / "out")
+    assert (tmp_path / "out" / "GSC_Opportunities_filled.csv").exists()

@@ -52,6 +52,21 @@ def test_cannibalization_ignores_single_page_and_noise_pages():
     assert gsc.cannibalization_rows(rows) == []
 
 
+def test_cannibalization_duplicate_query_page_rows_do_not_self_conflict():
+    rows = [row("dup", "/a", impressions=600), row("dup", "/a", impressions=400),
+            row("dup", "/b", impressions=10)]
+    assert gsc.cannibalization_rows(rows) == []
+
+
+def test_cannibalization_aggregates_split_rows_before_noise_filter():
+    # Each /b row is under MIN_IMPRESSIONS / 2 alone; together they clear it and the share.
+    rows = [row("agg", "/a", impressions=600),
+            row("agg", "/b", impressions=40), row("agg", "/b", impressions=40),
+            row("agg", "/b", impressions=40), row("agg", "/b", impressions=40)]  # 160 total, 21%
+    out = gsc.cannibalization_rows(rows)
+    assert [(r["URL 1"], r["URL 2"]) for r in out] == [("/a", "/b")]
+
+
 def test_cannibalization_sorted_by_query():
     rows = [row(q, p, impressions=500) for q in ("zeta", "alpha") for p in ("/a", "/b")]
     assert [r["Keyword / Intent"] for r in gsc.cannibalization_rows(rows)] == ["alpha", "zeta"]

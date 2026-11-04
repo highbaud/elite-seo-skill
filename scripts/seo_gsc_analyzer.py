@@ -47,19 +47,29 @@ from workbook_spec import (
 
 # Rough expected CTR by position bucket (industry-typical medians; used only to
 # flag underperformers, never reported as a benchmark to clients).
-EXPECTED_CTR: dict[int, float] = {1: 0.28, 2: 0.15, 3: 0.10, 4: 0.07, 5: 0.05,
-                                  6: 0.04, 7: 0.03, 8: 0.025, 9: 0.02, 10: 0.018}
+EXPECTED_CTR: dict[int, float] = {
+    1: 0.28,
+    2: 0.15,
+    3: 0.10,
+    4: 0.07,
+    5: 0.05,
+    6: 0.04,
+    7: 0.03,
+    8: 0.025,
+    9: 0.02,
+    10: 0.018,
+}
 
-MIN_IMPRESSIONS = 100          # ignore noise rows
+MIN_IMPRESSIONS = 100  # ignore noise rows
 STRIKING_DISTANCE: tuple[float, float] = (4.0, 15.0)
-CTR_UNDERPERFORM_RATIO = 0.5   # flag if CTR < 50% of position-expected
-CANNIBAL_SHARE = 0.20          # 2nd page needs >=20% of query impressions
-DECAY_DROP = 0.20              # >=20% click drop flags decay
-DECAY_MIN_PREV_CLICKS = 10     # too few previous clicks to judge decay
+CTR_UNDERPERFORM_RATIO = 0.5  # flag if CTR < 50% of position-expected
+CANNIBAL_SHARE = 0.20  # 2nd page needs >=20% of query impressions
+DECAY_DROP = 0.20  # >=20% click drop flags decay
+DECAY_MIN_PREV_CLICKS = 10  # too few previous clicks to judge decay
 
 REQUIRED_COLUMNS: tuple[str, ...] = ("query", "page", "clicks", "impressions", "position")
 
-MAX_PROBLEM_EXAMPLES = 5       # skipped-row reasons kept per file
+MAX_PROBLEM_EXAMPLES = 5  # skipped-row reasons kept per file
 
 Mode = Literal["opportunities", "cannibalization", "decay", "all"]
 
@@ -67,12 +77,18 @@ Mode = Literal["opportunities", "cannibalization", "decay", "all"]
 TabRow = dict[str, CellValue]
 
 
-class GscInputError(ValueError):
-    """The GSC export is unusable (missing columns, undecodable file)."""
+class GscInputError(Exception):
+    """The run cannot proceed: unusable export (missing columns, undecodable file) or bad arguments.
+
+    Deliberately not a ValueError: read_rows catches ValueError per row, and file-level
+    failures must never be mistaken for a skippable malformed row.
+    """
 
 
 @dataclass(frozen=True)
 class GscRow:
+    """One parsed GSC export row."""
+
     query: str
     page: str
     clicks: float
@@ -82,6 +98,8 @@ class GscRow:
 
 @dataclass(frozen=True)
 class ReadResult:
+    """Parsed rows plus a count and sample of the rows that were skipped."""
+
     rows: list[GscRow]
     skipped: int  # malformed rows that were dropped
     # First few skipped rows as (CSV file line number, reason); the header is line 1.
@@ -167,6 +185,7 @@ def read_rows(path: str | Path) -> ReadResult:
 
 
 def expected_ctr(position: float) -> float:
+    """Expected CTR for the position bucket (positions clamp to 1-10)."""
     bucket = min(10, max(1, round(position)))
     return EXPECTED_CTR[bucket]
 
@@ -202,22 +221,25 @@ def opportunity_rows(rows: Sequence[GscRow]) -> list[TabRow]:
 
 def cannibalization_rows(rows: Sequence[GscRow]) -> list[TabRow]:
     """Queries where 2+ pages each hold a meaningful impression share."""
-    by_query: defaultdict[str, list[GscRow]] = defaultdict(list)
+    # GSC exports split by device/country repeat (query, page); sum them first so a
+    # page is never reported as conflicting with itself.
+    impressions: defaultdict[str, dict[str, float]] = defaultdict(dict)
     for r in rows:
-        if r.impressions >= MIN_IMPRESSIONS / 2:
-            by_query[r.query].append(r)
+        pages = impressions[r.query]
+        pages[r.page] = pages.get(r.page, 0.0) + r.impressions
     found: list[tuple[str, TabRow]] = []
-    for query, group in by_query.items():
+    for query, pages in impressions.items():
+        group = [(page, imp) for page, imp in pages.items() if imp >= MIN_IMPRESSIONS / 2]
         if len(group) < 2:
             continue
-        total = sum(g.impressions for g in group)
-        group.sort(key=lambda g: -g.impressions)
-        top, second = group[0], group[1]
-        if second.impressions / total >= CANNIBAL_SHARE:
+        total = sum(imp for _, imp in group)
+        group.sort(key=lambda item: -item[1])
+        (top_page, _), (second_page, second_imp) = group[0], group[1]
+        if second_imp / total >= CANNIBAL_SHARE:
             found.append((query, {
-                "Keyword / Intent": query, "URL 1": top.page, "URL 2": second.page,
+                "Keyword / Intent": query, "URL 1": top_page, "URL 2": second_page,
                 "Conflict Type": "Review: true duplicate / intent split / format mismatch",
-                "Winning URL": top.page,
+                "Winning URL": top_page,
                 "Decision": "Diagnose with Cannibalization prompt before merging",
             }))
     found.sort(key=lambda item: item[0])
@@ -225,6 +247,7 @@ def cannibalization_rows(rows: Sequence[GscRow]) -> list[TabRow]:
 
 
 def _totals_by_page(rows: Sequence[GscRow]) -> dict[str, PageTotals]:
+    """Aggregate rows into per-page totals."""
     totals: defaultdict[str, PageTotals] = defaultdict(PageTotals)
     for r in rows:
         totals[r.page].add(r)
@@ -271,7 +294,8 @@ def write_tab(out_dir: Path, title: str, rows: Sequence[Mapping[str, CellValue]]
     return path
 
 
-def _load(path: str) -> list[GscRow]:
+def _load(path: Path) -> list[GscRow]:
+    """Read one export, reporting skipped rows on stderr."""
     result = read_rows(path)
     if result.skipped:
         print(f"{Path(path).name}: skipped {result.skipped} malformed row(s)", file=sys.stderr)
@@ -280,12 +304,18 @@ def _load(path: str) -> list[GscRow]:
     return result.rows
 
 
-def generate_tabs(mode: Mode, files: Sequence[str], out_dir: Path) -> None:
-    """Read the export(s) and write the filled CSV tab(s) selected by ``mode``."""
-    if mode in ("decay", "all"):
-        prev_rows, cur_rows = _load(files[0]), _load(files[1])
-    else:
-        prev_rows, cur_rows = [], _load(files[0])
+def generate_tabs(mode: Mode, current: Path, out_dir: Path, previous: Path | None = None) -> None:
+    """Read the export(s) and write the filled CSV tab(s) selected by ``mode``.
+
+    ``previous`` is required for decay/all (the earlier period) and ignored otherwise;
+    ``current`` is always the latest period. Raises GscInputError if ``previous`` is
+    missing for a mode that needs it.
+    """
+    needs_previous = mode in ("decay", "all")
+    if needs_previous and previous is None:
+        raise GscInputError(f"{mode} needs a previous-period export")
+    prev_rows = _load(previous) if needs_previous and previous is not None else []
+    cur_rows = _load(current)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     if mode in ("opportunities", "all"):
@@ -304,28 +334,47 @@ def generate_tabs(mode: Mode, files: Sequence[str], out_dir: Path) -> None:
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Parse and validate the command line (argparse exits with 2 on usage errors)."""
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("mode", choices=get_args(Mode))
-    ap.add_argument("files", nargs="+",
-                    help="GSC export CSV(s): one file for opportunities/cannibalization; "
-                         "previous then current for decay/all")
-    ap.add_argument("-o", "--out-dir", dest="out_dir", type=Path, default=Path("."),
-                    help="output directory (default: current directory)")
-    ap.add_argument("--out", dest="out_dir", type=Path, help=argparse.SUPPRESS)  # deprecated alias
-    args = ap.parse_args(argv)
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        allow_abbrev=False,
+    )
+    parser.add_argument("mode", choices=get_args(Mode))
+    parser.add_argument(
+        "files",
+        nargs="+",
+        type=Path,
+        help="GSC export CSV(s): one file for opportunities/cannibalization; "
+        "previous then current for decay/all",
+    )
+    parser.add_argument(
+        "-o",
+        "--out-dir",
+        dest="out_dir",
+        type=Path,
+        default=Path("."),
+        help="output directory (default: current directory)",
+    )
+    args = parser.parse_args(argv)
 
     expected = 2 if args.mode in ("decay", "all") else 1
     if len(args.files) != expected:
-        ap.error(f"{args.mode} takes exactly {expected} file(s), got {len(args.files)}"
-                 + (" (previous.csv current.csv)" if expected == 2 else ""))
+        parser.error(
+            f"{args.mode} takes exactly {expected} file(s), got {len(args.files)}"
+            + (" (previous.csv current.csv)" if expected == 2 else "")
+        )
     return args
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     """CLI entry point; returns the process exit code."""
     args = parse_args(argv)
+    if len(args.files) == 2:
+        previous, current = args.files
+    else:
+        previous, current = None, args.files[0]
     try:
-        generate_tabs(args.mode, args.files, args.out_dir)
+        generate_tabs(args.mode, current, args.out_dir, previous)
     except (GscInputError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
