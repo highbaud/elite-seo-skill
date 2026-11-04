@@ -1,0 +1,41 @@
+"""Tests for GSC CSV output: write_tab behaviour and header contract with csv-templates."""
+
+from __future__ import annotations
+
+import csv
+
+import pytest
+
+import seo_gsc_analyzer as gsc
+from gsc_helpers import read_csv, row
+from kit_common import CSV_TEMPLATE_DIR
+from workbook_spec import headers_for
+
+
+def test_write_tab_orders_by_header_and_fills_missing(tmp_path):
+    headers = headers_for("Content_Decay")
+    path = gsc.write_tab(tmp_path, "Content_Decay", [{"Action": "Refresh", "URL": "/x"}])
+    assert read_csv(path) == [headers, ["/x" if h == "URL" else "Refresh" if h == "Action" else ""
+                                        for h in headers]]
+
+
+def test_write_tab_rejects_unknown_keys(tmp_path):
+    with pytest.raises(ValueError, match="Bogus"):
+        gsc.write_tab(tmp_path, "Cannibalization", [{"URL 1": "/a", "Bogus": "x"}])
+    assert not (tmp_path / "Cannibalization_filled.csv").exists()
+
+
+@pytest.mark.parametrize("title", ["GSC_Opportunities", "Cannibalization", "Content_Decay"])
+def test_headers_match_csv_template(title):
+    template = CSV_TEMPLATE_DIR / f"{title}.csv"
+    with template.open(newline="", encoding="utf-8-sig") as f:
+        assert headers_for(title) == next(csv.reader(f))
+
+
+def test_analyzer_rows_use_only_real_headers():
+    rows = [row("q", "/a", impressions=500, position=2.0), row("q", "/b", impressions=500, position=8.0)]
+    for title, out in (("GSC_Opportunities", gsc.opportunity_rows(rows)),
+                       ("Cannibalization", gsc.cannibalization_rows(rows)),
+                       ("Content_Decay", gsc.decay_rows([row(clicks=100)], []))):
+        assert out
+        assert all(set(r) <= set(headers_for(title)) for r in out)
