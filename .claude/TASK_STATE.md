@@ -88,3 +88,4 @@ strict 89.8 = overall 89.8 | objective 100 | 0 open (3 false_positive). Mechanic
 Remaining gap = subjective (stale, pre-cycle-2). NEXT: re-review #3 (desloppify review --run-batches --dry-run --force-review-rerun), import, fix new items.
 - Review #3 run dir: .desloppify/subagents/runs/20261104_190820. Wave1 (1-5) launched.
 - R3 wave1 DONE (xmodule 93, high_eleg 86, convention 88, errors 90, naming 90). Wave2 launched.
+- R3 wave2 DONE (abstraction 93, deps 92, low_eleg 88, mid_eleg 90.5, test 88). Wave3 launched.
