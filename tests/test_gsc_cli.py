@@ -18,6 +18,9 @@ from workbook_spec import headers_for
     ["decay", "a.csv"],
     ["decay", "a.csv", "b.csv", "c.csv"],
     ["all", "a.csv"],
+    ["queue", "a.csv"],
+    ["snapshot", "a.csv", "b.csv", "--url", "/a"],
+    ["measure", "a.csv", "b.csv", "--checkpoint", "d28"],
 ])
 def test_wrong_file_counts_are_argparse_errors(args, tmp_path, capsys):
     with pytest.raises(SystemExit) as exc:
@@ -40,15 +43,22 @@ def test_all_mode_end_to_end(tmp_path, capsys):
     gsc.main(["all", str(prev), str(cur), "-o", str(out)])
     captured = capsys.readouterr()
     assert captured.out.splitlines() == ["opportunities: 2 rows", "cannibalization: 1 queries",
-                                         "decay: 2 pages flagged"]
+                                         "decay: 2 pages flagged",
+                                         "queue: 2 pages ranked, 0 dropped as low-visibility "
+                                         "(<100 impressions)"]
     assert "previous.csv: skipped 1 malformed row(s)" in captured.err
-    for title in ("GSC_Opportunities", "Cannibalization", "Content_Decay"):
+    for title in ("GSC_Opportunities", "Cannibalization", "Content_Decay", "Edit_Queue"):
         rows = read_csv(out / f"{title}_filled.csv")
         assert rows[0] == headers_for(title)
     assert len(read_csv(out / "Content_Decay_filled.csv")) == 3
     decay = {r[0]: r for r in read_csv(out / "Content_Decay_filled.csv")[1:]}
     assert decay["/b"][5] == "dropped out"
     assert decay["/a"][5] == "5.0 -> 6.0"
+    # /a lost 90 of 100 clicks (recover 90 beats ctr (0.04 - 0.005) * 2000 = 70);
+    # /c is new, at position 8: ctr (0.025 - 0.01) * 1000 = 15.
+    queue = [r[:6] for r in read_csv(out / "Edit_Queue_filled.csv")[1:]]
+    assert queue == [["1", "/a", "recover", "Regression repair", "90", "Yes"],
+                     ["2", "/c", "ctr", "Title / description rewrite", "15", "No"]]
 
 
 def test_missing_input_file_is_clean_error(tmp_path, capsys):
@@ -98,7 +108,8 @@ def test_skipped_row_examples_on_stderr(tmp_path, capsys):
 
 
 def test_mode_choices_derived_from_mode_type():
-    assert get_args(gsc.Mode) == ("opportunities", "cannibalization", "decay", "all")
+    assert get_args(gsc.Mode) == ("opportunities", "cannibalization", "decay", "all",
+                                  "queue", "snapshot", "measure")
     with pytest.raises(SystemExit) as exc:
         gsc.parse_args(["bogus", "a.csv"])
     assert exc.value.code == 2
@@ -116,7 +127,7 @@ def test_parse_args_defaults_and_path_type():
 
 
 def test_needs_previous_is_the_arity_source_of_truth():
-    assert gsc.NEEDS_PREVIOUS == {"decay", "all"}
+    assert gsc.NEEDS_PREVIOUS == {"decay", "all", "queue"}
     assert gsc.NEEDS_PREVIOUS <= set(get_args(gsc.Mode))
 
 
@@ -128,7 +139,7 @@ def test_removed_out_alias_and_abbreviations_rejected(flag, tmp_path, capsys):
     assert "unrecognized arguments" in capsys.readouterr().err
 
 
-@pytest.mark.parametrize("mode", ["decay", "all"])
+@pytest.mark.parametrize("mode", ["decay", "all", "queue"])
 def test_generate_tabs_requires_previous_for_decay_and_all(mode, tmp_path):
     cur = write_export(tmp_path / "current.csv", ["q,/a,1,200,1%,5"])
     with pytest.raises(gsc.GscInputError, match="previous"):

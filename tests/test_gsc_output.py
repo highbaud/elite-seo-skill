@@ -1,4 +1,4 @@
-"""Tests for GSC CSV output: write_tab behaviour and header contract with csv-templates."""
+"""Tests for GSC CSV output: write_tab behavior and header contract with csv-templates."""
 
 from __future__ import annotations
 
@@ -25,7 +25,8 @@ def test_write_tab_rejects_unknown_keys(tmp_path):
     assert not (tmp_path / "Cannibalization_filled.csv").exists()
 
 
-@pytest.mark.parametrize("title", ["GSC_Opportunities", "Cannibalization", "Content_Decay"])
+@pytest.mark.parametrize("title", ["GSC_Opportunities", "Cannibalization", "Content_Decay",
+                                   "Edit_Queue", "Edit_Measurement"])
 def test_headers_match_csv_template(title):
     template = CSV_TEMPLATE_DIR / f"{title}.csv"
     with template.open(newline="", encoding="utf-8-sig") as f:

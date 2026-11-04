@@ -1,6 +1,6 @@
 ---
 name: elite-seo
-description: Review, audit, or improve SEO for a page, a site, or a whole strategy (SaaS, local service, ecommerce, publisher, affiliate/review, marketplace, personal brand, YMYL). Use whenever the user asks to review SEO, improve SEO, audit SEO, do on-page or technical SEO, optimize a page for search, build an SEO or keyword/content plan, do link building or local SEO, improve AI search visibility (AEO/GEO, ChatGPT/Perplexity/AI Overviews citations), analyze content decay or cannibalization, or produce an SEO client report. Includes a 31-tab audit workbook, scored issue register, SOPs, site-type playbooks, GSC export analyzer, and client report templates.
+description: Review, audit, or improve SEO for a page, a site, or a whole strategy (SaaS, local service, ecommerce, publisher, affiliate/review, marketplace, personal brand, YMYL). Use whenever the user asks to review SEO, improve SEO, audit SEO, do on-page or technical SEO, optimize a page for search, build an SEO or keyword/content plan, do link building or local SEO, improve AI search visibility (AEO/GEO, ChatGPT/Perplexity/AI Overviews citations), analyze content decay or cannibalization, or produce an SEO client report. Includes a 33-tab audit workbook, scored issue register, SOPs, site-type playbooks, GSC export analyzer, and client report templates.
 ---
 
 # Elite SEO Operating Kit
@@ -24,6 +24,7 @@ A complete SEO audit and strategy operating system. Everything is self-contained
    - AI search / AEO measurement and crawler policy: `references/kit/04-ai-search-aeo-sop.md`
    - Links, reviews, reputation, branded SERP: `references/kit/05-link-reputation-sop.md`
    - Agent readability (can an AI agent extract, date, attribute, and parse the page): `references/kit/12-agent-readability-sop.md`
+   - Building, rewriting, or auditing a page to rank and get cited by AI search (page anatomy in order, conversion placements, technical layer, house overrides): `references/ai-search-page-anatomy.md`
    - Quick wins first if the engagement needs fast proof: `references/kit/01-fast-wins-sop.md`
 4. **Score and roadmap** — every finding into `Issue_Register`; build the 30/60/90 roadmap from the highest-scoring issues. Verify with `references/kit/11-master-checklist.md`.
 5. **Deliver** — use `references/kit/07-client-report-template.md` (markdown) or `assets/elite-seo-audit-report-template.docx`, fronted by `references/kit/10-executive-scorecard.md`.
@@ -34,7 +35,7 @@ A complete SEO audit and strategy operating system. Everything is self-contained
 - ChatGPT Search leans partly on Bing's index: Bing Webmaster Tools + IndexNow are AI-visibility work. `OAI-SearchBot` (search inclusion) is separate from `GPTBot` (training).
 - Perplexity's user-triggered `Perplexity-User` fetches generally ignore robots.txt; control at the WAF if needed.
 - `llms.txt` is optional agent usability, not a ranking lever and not required for Google AI features.
-- FAQ rich results display only for authoritative gov/health sites; HowTo rich results are deprecated (both since 2023).
+- FAQ rich results were removed from Google Search on May 7, 2026 (gov/health only since 2023); HowTo rich results are deprecated. Keep FAQ content for answer engines; never sell `FAQPage` markup as a win.
 - AI answers are volatile: run each prompt 3+ times across days, log engine/region/account state, report mention/citation rates as fractions. Never claim "ranks #1 on ChatGPT" from one run.
 - The full per-bot decision matrix (Google, OpenAI, Perplexity, Anthropic, Apple, Meta, Common Crawl, ByteDance) is the `Crawler_Access` workbook tab; every bot gets a deliberate Allow/Block decision.
 
@@ -44,7 +45,7 @@ Distinct from citation measurement above: a page can rank for humans yet be unus
 
 ## Automation
 
-- **GSC analyzer** (no dependencies): `python scripts/seo_gsc_analyzer.py all previous.csv current.csv -o out/` converts GSC "Queries + Pages" exports into pre-filled rows for GSC_Opportunities (striking distance + position-adjusted low CTR), Cannibalization (queries split across pages), and Content_Decay (20%+ click drops).
+- **GSC analyzer** (no dependencies): `python scripts/seo_gsc_analyzer.py all previous.csv current.csv -o out/` converts GSC "Queries + Pages" exports into pre-filled rows for GSC_Opportunities (striking distance + position-adjusted low CTR), Cannibalization (queries split across pages), Content_Decay (20%+ click drops), and Edit_Queue (one ranked work queue). `queue` builds the queue alone; `snapshot` and `measure` record an edit and re-read it against a same-dates control at +28/+56 days (Edit_Measurement). Details: `references/kit/README.md`.
 - **Regenerate the kit** (`pip install -r requirements.txt`): `python scripts/build_elite_seo_operating_kit.py` rebuilds the workbook and all CSV templates from the tab definitions in `scripts/workbook_spec.py`; `python scripts/build_seo_report_docx.py` rebuilds the DOCX report template. Paths are relative to this skill folder. Never hand-edit the generated workbook, CSVs, or DOCX; change the spec or builder instead. The Markdown SOPs in `references/` are the source and are edited directly.
 
 ## Deep References
