@@ -87,3 +87,4 @@ high_eleg 86, incomplete_mig 96, init 91, logic 88, low_eleg 81, mid_eleg 82, na
 strict 89.8 = overall 89.8 | objective 100 | 0 open (3 false_positive). Mechanical all 100%.
 Remaining gap = subjective (stale, pre-cycle-2). NEXT: re-review #3 (desloppify review --run-batches --dry-run --force-review-rerun), import, fix new items.
 - Review #3 run dir: .desloppify/subagents/runs/20261104_190820. Wave1 (1-5) launched.
+- R3 wave1 DONE (xmodule 93, high_eleg 86, convention 88, errors 90, naming 90). Wave2 launched.
