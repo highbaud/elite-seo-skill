@@ -70,3 +70,4 @@ Subjective scores are stale (pre-refactor). NEXT: re-review all dims: `desloppif
 - Re-review run dir: .desloppify/subagents/runs/20261104_185923 (20 batches, same dim order as before). Wave1 (1-5) launched. Then: desloppify review --import-run <dir> --scan-after-import
 - Re-review wave1 DONE: xmodule 93, high_eleg 86, convention 88, errors 92, naming 86. Wave2 (6-10) launched.
 - Git: shallow clone lacked origin/desloppify-quality tracking ref (hook false alarms). Fixed with extra fetch refspec + branch -u.
+- Re-review wave2 DONE: abstraction 93, deps 93, low_eleg 81, mid_eleg 82, test_strategy 88. Wave3 (11-15) launched.
