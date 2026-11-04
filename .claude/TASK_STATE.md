@@ -71,3 +71,4 @@ Subjective scores are stale (pre-refactor). NEXT: re-review all dims: `desloppif
 - Re-review wave1 DONE: xmodule 93, high_eleg 86, convention 88, errors 92, naming 86. Wave2 (6-10) launched.
 - Git: shallow clone lacked origin/desloppify-quality tracking ref (hook false alarms). Fixed with extra fetch refspec + branch -u.
 - Re-review wave2 DONE: abstraction 93, deps 93, low_eleg 81, mid_eleg 82, test_strategy 88. Wave3 (11-15) launched.
+- Re-review wave3 DONE: api 86.5, authz 96, ai_debt 92, incomplete_mig 96, pkg_org 90. Wave4 (16-20) launched.
