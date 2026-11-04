@@ -57,3 +57,5 @@ Streams (Sonnet agents, same worktree, disjoint files, agents do NOT commit / NO
 - Me after: requirements*.txt, README/SKILL.md/kit README, contract test, review, resolve items, commit, rescan.
 - Agents A/B/C launched (Sonnet, background). Me: DONE (uncommitted, commit with agent code): requirements.txt, requirements-dev.txt, README.md regen+tests sections, SKILL.md automation line, references/kit/README.md asset paths.
   If session dies before agents finish: check `git status`; review each script vs its spec in this file; run `python3 -m pytest -q`.
+- Stream C (docx) DONE + committed; verified identical (49 paras, 5 tables), 7 tests pass.
+- Stream A (analyzer) DONE + committed; old vs new byte-identical on 1800 random rows; 29 tests pass.
