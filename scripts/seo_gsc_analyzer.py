@@ -35,7 +35,7 @@ from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, get_args
+from typing import Literal, cast, get_args
 
 from kit_common import CellValue, write_csv
 from workbook_spec import (
@@ -72,6 +72,10 @@ REQUIRED_COLUMNS: tuple[str, ...] = ("query", "page", "clicks", "impressions", "
 MAX_PROBLEM_EXAMPLES = 5  # skipped-row reasons kept per file
 
 Mode = Literal["opportunities", "cannibalization", "decay", "all"]
+
+# Modes that compare two periods and so need a previous-period export; every other mode
+# takes the current export alone. The single source of truth for mode-to-file arity.
+NEEDS_PREVIOUS: frozenset[Mode] = frozenset({"decay", "all"})
 
 # One workbook row keyed by column header; columns the analyzer leaves blank are omitted.
 TabRow = dict[str, CellValue]
@@ -146,7 +150,24 @@ def _parse_number(cell: str | None, column: str, *, default: float | None) -> fl
     return value
 
 
-def read_rows(path: str | Path) -> ReadResult:
+def _parse_row(raw: Mapping[str, str | None], field_map: Mapping[str, str]) -> GscRow:
+    """Build a GscRow from one DictReader row; raises ValueError with the skip reason."""
+    query, page = raw[field_map["query"]], raw[field_map["page"]]
+    if query is None or page is None:
+        raise ValueError("short row")
+    position = _parse_number(raw[field_map["position"]], "position", default=None)
+    if position <= 0:
+        raise ValueError("position must be >= 1")
+    return GscRow(
+        query=query.strip(),
+        page=page.strip(),
+        clicks=_parse_number(raw[field_map["clicks"]], "clicks", default=0.0),
+        impressions=_parse_number(raw[field_map["impressions"]], "impressions", default=0.0),
+        position=position,
+    )
+
+
+def read_rows(path: Path) -> ReadResult:
     """Read a GSC export. Raises GscInputError for missing columns, OSError for I/O."""
     rows: list[GscRow] = []
     skipped = 0
@@ -160,19 +181,7 @@ def read_rows(path: str | Path) -> ReadResult:
                 raise GscInputError(f"{path}: missing columns {missing}. Found: {reader.fieldnames}")
             for raw in reader:
                 try:
-                    query, page = raw[field_map["query"]], raw[field_map["page"]]
-                    if query is None or page is None:
-                        raise ValueError("short row")
-                    position = _parse_number(raw[field_map["position"]], "position", default=None)
-                    if position <= 0:
-                        raise ValueError("position must be >= 1")
-                    rows.append(GscRow(
-                        query=query.strip(),
-                        page=page.strip(),
-                        clicks=_parse_number(raw[field_map["clicks"]], "clicks", default=0.0),
-                        impressions=_parse_number(raw[field_map["impressions"]], "impressions", default=0.0),
-                        position=position,
-                    ))
+                    rows.append(_parse_row(raw, field_map))
                 except ValueError as exc:
                     skipped += 1
                     if len(problems) < MAX_PROBLEM_EXAMPLES:
@@ -298,7 +307,7 @@ def _load(path: Path) -> list[GscRow]:
     """Read one export, reporting skipped rows on stderr."""
     result = read_rows(path)
     if result.skipped:
-        print(f"{Path(path).name}: skipped {result.skipped} malformed row(s)", file=sys.stderr)
+        print(f"{path.name}: skipped {result.skipped} malformed row(s)", file=sys.stderr)
         for line_number, reason in result.problems:
             print(f"  line {line_number}: {reason}", file=sys.stderr)
     return result.rows
@@ -311,10 +320,11 @@ def generate_tabs(mode: Mode, current: Path, out_dir: Path, previous: Path | Non
     ``current`` is always the latest period. Raises GscInputError if ``previous`` is
     missing for a mode that needs it.
     """
-    needs_previous = mode in ("decay", "all")
-    if needs_previous and previous is None:
-        raise GscInputError(f"{mode} needs a previous-period export")
-    prev_rows = _load(previous) if needs_previous and previous is not None else []
+    prev_rows: list[GscRow] = []
+    if mode in NEEDS_PREVIOUS:
+        if previous is None:
+            raise GscInputError(f"{mode} needs a previous-period export")
+        prev_rows = _load(previous)
     cur_rows = _load(current)
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -332,7 +342,17 @@ def generate_tabs(mode: Mode, current: Path, out_dir: Path, previous: Path | Non
         print(f"decay: {len(rows)} pages flagged")
 
 
-def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+@dataclass(frozen=True)
+class CliArgs:
+    """Validated command line: the mode and the paths it maps onto."""
+
+    mode: Mode
+    current: Path
+    out_dir: Path
+    previous: Path | None = None  # set exactly for the modes in NEEDS_PREVIOUS
+
+
+def parse_args(argv: Sequence[str] | None = None) -> CliArgs:
     """Parse and validate the command line (argparse exits with 2 on usage errors)."""
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -357,24 +377,24 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     args = parser.parse_args(argv)
 
-    expected = 2 if args.mode in ("decay", "all") else 1
-    if len(args.files) != expected:
+    mode = cast(Mode, args.mode)  # argparse choices were derived from Mode
+    files: list[Path] = args.files
+    expected = 2 if mode in NEEDS_PREVIOUS else 1
+    if len(files) != expected:
         parser.error(
-            f"{args.mode} takes exactly {expected} file(s), got {len(args.files)}"
+            f"{mode} takes exactly {expected} file(s), got {len(files)}"
             + (" (previous.csv current.csv)" if expected == 2 else "")
         )
-    return args
+    if mode in NEEDS_PREVIOUS:
+        return CliArgs(mode, current=files[1], out_dir=args.out_dir, previous=files[0])
+    return CliArgs(mode, current=files[0], out_dir=args.out_dir)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     """CLI entry point; returns the process exit code."""
     args = parse_args(argv)
-    if len(args.files) == 2:
-        previous, current = args.files
-    else:
-        previous, current = None, args.files[0]
     try:
-        generate_tabs(args.mode, current, args.out_dir, previous)
+        generate_tabs(args.mode, args.current, args.out_dir, args.previous)
     except (GscInputError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

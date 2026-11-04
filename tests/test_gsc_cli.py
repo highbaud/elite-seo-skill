@@ -108,7 +108,16 @@ def test_parse_args_defaults_and_path_type():
     args = gsc.parse_args(["opportunities", "a.csv"])
     assert args.out_dir == Path(".")
     assert gsc.parse_args(["decay", "a", "b", "--out-dir", "x"]).out_dir == Path("x")
-    assert gsc.parse_args(["decay", "a", "b"]).files == [Path("a"), Path("b")]
+
+    two = gsc.parse_args(["decay", "a", "b"])
+    assert (two.mode, two.previous, two.current) == ("decay", Path("a"), Path("b"))
+    one = gsc.parse_args(["cannibalization", "a"])
+    assert (one.mode, one.previous, one.current) == ("cannibalization", None, Path("a"))
+
+
+def test_needs_previous_is_the_arity_source_of_truth():
+    assert gsc.NEEDS_PREVIOUS == {"decay", "all"}
+    assert gsc.NEEDS_PREVIOUS <= set(get_args(gsc.Mode))
 
 
 @pytest.mark.parametrize("flag", ["--out", "--ou"])

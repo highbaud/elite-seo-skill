@@ -39,3 +39,21 @@ def test_analyzer_rows_use_only_real_headers():
                        ("Content_Decay", gsc.decay_rows([row(clicks=100)], []))):
         assert out
         assert all(set(r) <= set(headers_for(title)) for r in out)
+
+
+def test_every_row_builder_key_is_a_workbook_header():
+    # Both opportunity branches: striking distance (pos 8) and low CTR at pos 1.
+    cur = [row("q", "/a", clicks=0, impressions=500, position=1.0),
+           row("q", "/b", impressions=500, position=8.0)]
+    opp = gsc.opportunity_rows(cur)
+    assert {r["Opportunity Type"] for r in opp} == {
+        "High impressions low CTR for position", "Striking distance (pos 4-15)"}
+    built = {
+        "GSC_Opportunities": opp,
+        "Cannibalization": gsc.cannibalization_rows(cur),
+        "Content_Decay": gsc.decay_rows([row(clicks=100)], [row(clicks=10)]),
+    }
+    for title, rows in built.items():
+        assert rows, title
+        keys = set().union(*rows)
+        assert keys <= set(headers_for(title)), (title, keys - set(headers_for(title)))
