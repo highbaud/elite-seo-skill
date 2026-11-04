@@ -14,9 +14,9 @@ from workbook_spec import headers_for
 
 def test_write_tab_orders_by_header_and_fills_missing(tmp_path):
     headers = headers_for("Content_Decay")
-    path = gsc.write_tab(tmp_path, "Content_Decay", [{"Action": "Refresh", "URL": "/x"}])
-    assert read_csv(path) == [headers, ["/x" if h == "URL" else "Refresh" if h == "Action" else ""
-                                        for h in headers]]
+    given = {"Action": "Refresh", "URL": "/x"}
+    path = gsc.write_tab(tmp_path, "Content_Decay", [given])
+    assert read_csv(path) == [headers, [given.get(h, "") for h in headers]]
 
 
 def test_write_tab_rejects_unknown_keys(tmp_path):
@@ -30,15 +30,6 @@ def test_headers_match_csv_template(title):
     template = CSV_TEMPLATE_DIR / f"{title}.csv"
     with template.open(newline="", encoding="utf-8-sig") as f:
         assert headers_for(title) == next(csv.reader(f))
-
-
-def test_analyzer_rows_use_only_real_headers():
-    rows = [row("q", "/a", impressions=500, position=2.0), row("q", "/b", impressions=500, position=8.0)]
-    for title, out in (("GSC_Opportunities", gsc.opportunity_rows(rows)),
-                       ("Cannibalization", gsc.cannibalization_rows(rows)),
-                       ("Content_Decay", gsc.decay_rows([row(clicks=100)], []))):
-        assert out
-        assert all(set(r) <= set(headers_for(title)) for r in out)
 
 
 def test_every_row_builder_key_is_a_workbook_header():
