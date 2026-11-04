@@ -62,3 +62,4 @@ Streams (Sonnet agents, same worktree, disjoint files, agents do NOT commit / NO
 - Stream B (builder) DONE + committed c1f255d: assets identical (31 CSV byte-equal, xlsx 0 diffs). I unified CSV writing via kit_common.write_csv(lineterminator=).
 - Extra fixes (me): analyzer --out-dir alias; builders catch OSError. 49 tests pass.
 - NEXT: resolve all review items w/ notes (desloppify plan resolve <id> --note ... --confirm), then rescan.
+- All 37 review items resolved (in plan order; short notes get silently refused, check for 'Resolved 1 issue'). commit-log recorded. NEXT: desloppify scan.
