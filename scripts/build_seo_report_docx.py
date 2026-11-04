@@ -14,13 +14,12 @@ Requires python-docx (pip install -r requirements.txt).
 
 from __future__ import annotations
 
-import argparse
 import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from kit_common import ASSETS_DIR, atomic_write
+from kit_common import atomic_write, run_builder
 
 # A missing dependency is reported by main() as a one-line error rather than a traceback.
 MISSING_DEPENDENCY: str | None = None
@@ -243,33 +242,23 @@ def build_document() -> DocumentType:
     return doc
 
 
-def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build the Elite SEO client report DOCX template.")
-    parser.add_argument(
-        "-o",
-        "--out-dir",
-        type=Path,
-        default=ASSETS_DIR,
-        help="directory to write the DOCX into (default: the skill's assets/ folder)",
-    )
-    return parser.parse_args(argv)
+def write_report(out_dir: Path) -> list[str]:
+    """Build the report template, save it atomically under ``out_dir``, return its path."""
+    path = out_dir / OUTPUT_NAME
+    doc = build_document()
+    atomic_write(path, lambda tmp: doc.save(str(tmp)))
+    return [str(path)]
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     """CLI entry point; returns the process exit code."""
-    args = parse_args(argv)
-    if MISSING_DEPENDENCY:
-        print(f"error: {MISSING_DEPENDENCY}", file=sys.stderr)
-        return 1
-    path: Path = args.out_dir / OUTPUT_NAME
-    doc = build_document()
-    try:
-        atomic_write(path, lambda tmp: doc.save(str(tmp)))
-    except OSError as exc:
-        print(f"error: could not write {path}: {exc}", file=sys.stderr)
-        return 1
-    print(path)
-    return 0
+    return run_builder(
+        argv,
+        description="Build the Elite SEO client report DOCX template.",
+        out_dir_help="directory to write the DOCX into (default: the skill's assets/ folder)",
+        missing_dependency=MISSING_DEPENDENCY,
+        build=write_report,
+    )
 
 
 if __name__ == "__main__":

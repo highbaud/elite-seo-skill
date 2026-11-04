@@ -116,7 +116,7 @@ def test_unwritable_out_dir_is_clean_error(tmp_path: Path, capsys: pytest.Captur
     blocker = tmp_path / "not-a-dir"
     blocker.write_text("x")
     assert builder.main(["--out-dir", str(blocker)]) == 1
-    assert capsys.readouterr().err.startswith("error: could not write the kit to")
+    assert capsys.readouterr().err.startswith(f"error: could not write to {blocker}")
 
 
 def _sheet_snapshot(ws) -> dict[str, object]:

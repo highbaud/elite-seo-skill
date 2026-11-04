@@ -17,7 +17,6 @@ Requires openpyxl: pip install -r requirements.txt
 
 from __future__ import annotations
 
-import argparse
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -34,7 +33,7 @@ try:
 except ImportError:
     MISSING_DEPENDENCY = "openpyxl is not installed; run: pip install -r requirements.txt"
 
-from kit_common import ASSETS_DIR, CellValue, atomic_write, write_csv
+from kit_common import CellValue, atomic_write, run_builder, write_csv
 from workbook_spec import LAST_DATA_ROW, SHEETS, SheetSpec, column_letter
 
 WORKBOOK_NAME = "elite-seo-master-audit-workbook.xlsx"
@@ -157,34 +156,21 @@ def build_kit(out_dir: Path) -> tuple[Path, Path]:
     return workbook_path, csv_dir
 
 
-def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(description="Build the Elite SEO Operating Kit workbook and CSV templates.")
-    parser.add_argument(
-        "-o",
-        "--out-dir",
-        type=Path,
-        default=ASSETS_DIR,
-        help="output directory (default: the skill's assets/ folder); CSVs go to <out-dir>/csv-templates/",
-    )
-    return parser.parse_args(argv)
+def _build_and_summarize(out_dir: Path) -> list[str]:
+    """Build the kit into ``out_dir`` and return the lines to print."""
+    workbook_path, csv_dir = build_kit(out_dir)
+    return [f"Created kit at {out_dir}", f"Workbook: {workbook_path}", f"CSV templates: {csv_dir}"]
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     """CLI entry point; returns the process exit code."""
-    args = parse_args(argv)
-    if MISSING_DEPENDENCY:
-        print(f"error: {MISSING_DEPENDENCY}", file=sys.stderr)
-        return 1
-    try:
-        workbook_path, csv_dir = build_kit(args.out_dir)
-    except OSError as exc:
-        print(f"error: could not write the kit to {args.out_dir}: {exc}", file=sys.stderr)
-        return 1
-    print(f"Created kit at {args.out_dir}")
-    print(f"Workbook: {workbook_path}")
-    print(f"CSV templates: {csv_dir}")
-    return 0
+    return run_builder(
+        argv,
+        description="Build the Elite SEO Operating Kit workbook and CSV templates.",
+        out_dir_help="output directory (default: the skill's assets/ folder); CSVs go to <out-dir>/csv-templates/",
+        missing_dependency=MISSING_DEPENDENCY,
+        build=_build_and_summarize,
+    )
 
 
 if __name__ == "__main__":

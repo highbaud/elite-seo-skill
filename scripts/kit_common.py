@@ -5,8 +5,10 @@ Standard library only, so the dependency-free GSC analyzer can import it too.
 
 from __future__ import annotations
 
+import argparse
 import csv
 import os
+import sys
 from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
 
@@ -54,3 +56,33 @@ def write_csv(
             writer.writerows(["" if value is None else value for value in row] for row in rows)
 
     atomic_write(path, _write)
+
+
+def run_builder(
+    argv: Sequence[str] | None,
+    *,
+    description: str,
+    out_dir_help: str,
+    missing_dependency: str | None,
+    build: Callable[[Path], Sequence[str]],
+) -> int:
+    """Shared CLI for the asset builders; returns the process exit code.
+
+    Parses ``-o/--out-dir`` (default: the skill's assets/ folder), reports a missing
+    dependency or an unwritable output location as a one-line ``error:`` message,
+    otherwise runs ``build(out_dir)`` and prints the summary lines it returns.
+    """
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("-o", "--out-dir", type=Path, default=ASSETS_DIR, help=out_dir_help)
+    out_dir: Path = parser.parse_args(argv).out_dir
+    if missing_dependency:
+        print(f"error: {missing_dependency}", file=sys.stderr)
+        return 1
+    try:
+        summary = build(out_dir)
+    except OSError as exc:
+        print(f"error: could not write to {out_dir}: {exc}", file=sys.stderr)
+        return 1
+    for line in summary:
+        print(line)
+    return 0
