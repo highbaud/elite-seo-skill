@@ -2,6 +2,8 @@
 
 Date: 2026-07-06
 
+> **Scope:** the strategy and operating model: what to build, in what order, and how to outrank and defend visibility over 90 days. For diagnosing a specific site, use the audit modules in `elite-seo-audit-strategy-expansion.md`; for step-by-step execution, use the SOPs indexed in `kit/README.md`.
+
 This project plan turns the supplied SEO/outbound source folder into a repeatable system for ranking, outranking, and defending search visibility across Google, Bing, ChatGPT Search, Perplexity, social SERPs, local packs, image/video search, and review-led buyer research.
 
 It intentionally separates durable SEO from short-lived arbitrage. Several supplied sources promote "parasite SEO", mass content, paid links, domain mimicry, and fake/low-quality review plays. Those are useful as market signals, but they are not the foundation of this plan. Google explicitly treats ranking manipulation, link spam, scaled content abuse, scraping, and site reputation abuse as spam risks. OpenAI also states there is no guaranteed way to rank in ChatGPT Search; inclusion depends in part on allowing OAI-SearchBot and producing reliable, relevant public content.

@@ -54,4 +54,4 @@ Distinct from citation measurement above: a page can rank for humans yet be unus
 - `references/kit/06-site-type-playbooks.md` — per-site-type priorities plus YMYL and enterprise overlays.
 - `references/kit/09-elite-prompts.md` — copy-paste analysis prompts (SERP reverse engineering, refresh, cannibalization, AI visibility, linkable assets, risk review, log-file triage, internal links).
 
-Load these on demand; do not read everything up front. For a quick engagement, SKILL.md + the relevant SOP + the workbook is enough.
+The knowledge plan answers "what strategy should this site run?"; the audit-strategy expansion answers "what is wrong with this site, and in what order do we fix it?". Load these on demand; do not read everything up front. For a quick engagement, SKILL.md + the relevant SOP + the workbook is enough.
