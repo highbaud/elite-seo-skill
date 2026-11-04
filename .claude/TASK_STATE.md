@@ -96,3 +96,4 @@ Remaining gap = subjective (stale, pre-cycle-2). NEXT: re-review #3 (desloppify 
 - Cannibalization bug fixed (aggregate per query+page). Builders: missing deps -> clean error. xlsx contract test.
 - NEXT: review #4 to credit cycle-3 fixes.
 - Review #4 run dir: .desloppify/subagents/runs/20261104_191513. Wave1 (1-5) launched.
+- R4 wave1 DONE (xmod 93, high 87, conv 92, err 90, naming 92). Wave2 launched.
