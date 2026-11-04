@@ -2,7 +2,9 @@
 
 Date: 2026-07-06
 
-This is the expansion that should be added to the original `elite-seo-knowledge-plan.md`. The first plan covered the broad SEO operating system. This addendum makes it audit-grade: more diagnostic depth, more site-type modules, stronger prioritization, better AI search measurement, and a cleaner delivery format for client or internal strategy work.
+> **Scope:** the audit layer: 24 diagnostic modules, site-type roadmaps, prioritization, and the delivery format for an audit. It assumes the strategy and operating model in `elite-seo-knowledge-plan.md` and does not repeat it; for step-by-step execution, use the SOPs indexed in `kit/README.md`.
+
+It adds what the knowledge plan leaves out: diagnostic depth, more site-type modules, stronger prioritization, better AI search measurement, and a cleaner delivery format for client or internal strategy work.
 
 ## What Was Missing From the First Plan
 

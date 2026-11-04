@@ -45,7 +45,7 @@ Distinct from citation measurement above: a page can rank for humans yet be unus
 ## Automation
 
 - **GSC analyzer** (no dependencies): `python scripts/seo_gsc_analyzer.py all previous.csv current.csv -o out/` converts GSC "Queries + Pages" exports into pre-filled rows for GSC_Opportunities (striking distance + position-adjusted low CTR), Cannibalization (queries split across pages), and Content_Decay (20%+ click drops).
-- **Regenerate the kit** (needs `openpyxl`, `python-docx`): `python scripts/build_elite_seo_operating_kit.py` rebuilds the workbook, all CSV templates, and the SOP docs; `python scripts/build_seo_report_docx.py` rebuilds the DOCX report template. Paths are relative to this skill folder. Edit the generator scripts, never the generated files.
+- **Regenerate the kit** (`pip install -r requirements.txt`): `python scripts/build_elite_seo_operating_kit.py` rebuilds the workbook and all CSV templates from the tab definitions in `scripts/workbook_spec.py`; `python scripts/build_seo_report_docx.py` rebuilds the DOCX report template. Paths are relative to this skill folder. Never hand-edit the generated workbook, CSVs, or DOCX; change the spec or builder instead. The Markdown SOPs in `references/` are the source and are edited directly.
 
 ## Deep References
 
@@ -54,4 +54,4 @@ Distinct from citation measurement above: a page can rank for humans yet be unus
 - `references/kit/06-site-type-playbooks.md` — per-site-type priorities plus YMYL and enterprise overlays.
 - `references/kit/09-elite-prompts.md` — copy-paste analysis prompts (SERP reverse engineering, refresh, cannibalization, AI visibility, linkable assets, risk review, log-file triage, internal links).
 
-Load these on demand; do not read everything up front. For a quick engagement, SKILL.md + the relevant SOP + the workbook is enough.
+The knowledge plan answers "what strategy should this site run?"; the audit-strategy expansion answers "what is wrong with this site, and in what order do we fix it?". Load these on demand; do not read everything up front. For a quick engagement, SKILL.md + the relevant SOP + the workbook is enough.

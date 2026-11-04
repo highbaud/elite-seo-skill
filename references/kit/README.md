@@ -4,7 +4,7 @@ This folder turns the SEO knowledge plan into a working audit and execution syst
 
 ## Start Here
 
-1. Open `elite-seo-master-audit-workbook.xlsx`.
+1. Open `../../assets/elite-seo-master-audit-workbook.xlsx`.
 2. Fill `Site_Profile`.
 3. Run the `00-audit-intake-and-triage.md` process.
 4. Add every finding to `Issue_Register`.
@@ -13,8 +13,8 @@ This folder turns the SEO knowledge plan into a working audit and execution syst
 
 ## Files
 
-- `elite-seo-master-audit-workbook.xlsx`: master workbook with tabs, formulas, dropdowns, and starter rows.
-- `csv-templates/`: CSV versions of every workbook tab for Google Sheets, Airtable, Notion, or a database.
+- `../../assets/elite-seo-master-audit-workbook.xlsx`: master workbook with tabs, formulas, dropdowns, and starter rows.
+- `../../assets/csv-templates/`: CSV versions of every workbook tab for Google Sheets, Airtable, Notion, or a database.
 - `00-audit-intake-and-triage.md`: how to start an audit and route it by site type.
 - `01-fast-wins-sop.md`: 48-hour, 7-day, and 30-day quick-win process.
 - `02-technical-seo-sop.md`: crawl, indexation, rendering, canonical, sitemap, and schema workflow.

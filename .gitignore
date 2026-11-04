@@ -15,3 +15,8 @@ Thumbs.db
 .idea/
 .vscode/
 *~
+
+# desloppify local state
+.desloppify/
+scorecard.png
+.claude/skills/desloppify/
