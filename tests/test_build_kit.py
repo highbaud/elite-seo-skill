@@ -106,9 +106,8 @@ def test_issue_register_formulas_and_formatting(built: Path) -> None:
     assert ranges == {f"{band}2:{band}500"}
 
 
-def test_unwritable_out_dir_is_clean_error(tmp_path: Path) -> None:
+def test_unwritable_out_dir_is_clean_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     blocker = tmp_path / "not-a-dir"
     blocker.write_text("x")
-    with pytest.raises(SystemExit) as exc:
-        builder.main(["--out-dir", str(blocker)])
-    assert str(exc.value).startswith("error: could not write the kit to")
+    assert builder.main(["--out-dir", str(blocker)]) == 1
+    assert capsys.readouterr().err.startswith("error: could not write the kit to")

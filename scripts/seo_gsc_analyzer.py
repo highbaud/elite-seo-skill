@@ -260,7 +260,8 @@ def _run(mode: str, files: Sequence[str], out_dir: Path) -> None:
         print(f"decay: {len(rows)} pages flagged")
 
 
-def main(argv: Sequence[str] | None = None) -> None:
+def main(argv: Sequence[str] | None = None) -> int:
+    """CLI entry point; returns the process exit code (argparse exits with 2 on usage errors)."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("mode", choices=["opportunities", "cannibalization", "decay", "all"])
     ap.add_argument("files", nargs="+",
@@ -278,8 +279,10 @@ def main(argv: Sequence[str] | None = None) -> None:
     try:
         _run(args.mode, args.files, Path(args.out))
     except (GscInputError, OSError) as exc:
-        sys.exit(f"error: {exc}")
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

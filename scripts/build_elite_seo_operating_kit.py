@@ -169,17 +169,19 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: Sequence[str] | None = None) -> None:
-    """CLI entry point."""
+def main(argv: Sequence[str] | None = None) -> int:
+    """CLI entry point; returns the process exit code."""
     args = parse_args(argv)
     try:
         workbook_path, csv_dir = build_kit(args.out_dir)
     except OSError as exc:
-        sys.exit(f"error: could not write the kit to {args.out_dir}: {exc}")
+        print(f"error: could not write the kit to {args.out_dir}: {exc}", file=sys.stderr)
+        return 1
     print(f"Created kit at {args.out_dir}")
     print(f"Workbook: {workbook_path}")
     print(f"CSV templates: {csv_dir}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

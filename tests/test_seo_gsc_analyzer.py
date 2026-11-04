@@ -196,26 +196,23 @@ def test_all_mode_end_to_end(tmp_path, capsys):
 
 
 def test_missing_input_file_is_clean_error(tmp_path, capsys):
-    with pytest.raises(SystemExit) as exc:
-        gsc.main(["opportunities", str(tmp_path / "nope.csv"), "-o", str(tmp_path)])
-    assert isinstance(exc.value.code, str) and exc.value.code.startswith("error:")
-    assert "nope.csv" in exc.value.code
+    assert gsc.main(["opportunities", str(tmp_path / "nope.csv"), "-o", str(tmp_path)]) == 1
+    err = capsys.readouterr().err
+    assert err.startswith("error:") and "nope.csv" in err
 
 
-def test_missing_columns_is_clean_error(tmp_path):
+def test_missing_columns_is_clean_error(tmp_path, capsys):
     p = write_export(tmp_path / "x.csv", [], header="foo,bar\n")
-    with pytest.raises(SystemExit) as exc:
-        gsc.main(["cannibalization", str(p), "-o", str(tmp_path)])
-    assert "missing columns" in str(exc.value.code)
+    assert gsc.main(["cannibalization", str(p), "-o", str(tmp_path)]) == 1
+    assert "missing columns" in capsys.readouterr().err
 
 
-def test_unwritable_output_dir_is_clean_error(tmp_path):
+def test_unwritable_output_dir_is_clean_error(tmp_path, capsys):
     p = write_export(tmp_path / "x.csv", ["q,/a,1,200,1%,5"])
     blocker = tmp_path / "file"
     blocker.write_text("x")
-    with pytest.raises(SystemExit) as exc:
-        gsc.main(["opportunities", str(p), "-o", str(blocker / "sub")])
-    assert str(exc.value.code).startswith("error:")
+    assert gsc.main(["opportunities", str(p), "-o", str(blocker / "sub")]) == 1
+    assert capsys.readouterr().err.startswith("error:")
 
 
 # --- contract with csv templates -----------------------------------------

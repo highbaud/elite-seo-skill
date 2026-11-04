@@ -256,16 +256,19 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: Sequence[str] | None = None) -> None:
+def main(argv: Sequence[str] | None = None) -> int:
+    """CLI entry point; returns the process exit code."""
     args = parse_args(argv)
     path: Path = args.out_dir / OUTPUT_NAME
     doc = build_document()
     try:
         atomic_write(path, lambda tmp: doc.save(str(tmp)))
     except OSError as exc:
-        sys.exit(f"error: could not write {path}: {exc}")
+        print(f"error: could not write {path}: {exc}", file=sys.stderr)
+        return 1
     print(path)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
