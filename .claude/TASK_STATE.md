@@ -79,3 +79,6 @@ high_eleg 86, incomplete_mig 96, init 91, logic 88, low_eleg 81, mid_eleg 82, na
 18 new review items queued. Fix -> resolve (in order) -> rescan -> re-review.
 - Cycle2 me DONE (committed): shared alias/tab consts/issue seeds; md/docx sync test; docs tests; CI; builder -o. Analyzer agent running (owns analyzer + its tests).
 - Cycle2: all 18 review items resolved; commits 2ec09e7, dc43678, 73911b0. NEXT: scan, then re-review.
+- FINDING: strict counts status auto_resolved as failing. Mechanical fixes that vanish on rescan must be attested: `desloppify plan reopen <id>` then `plan resolve <id> --note ... --confirm`. Did this for 13 items.
+- sys_exit_in_library x3 marked --false-positive (honest: sys.exit(main()) in __main__ guard; detector ignores main guards). false_positive not penalized by strict.
+- Removed unused import tests/test_docs.py. Sonnet agent splitting tests/test_seo_gsc_analyzer.py (responsibility_cohesion). Then: rescan, re-review.
