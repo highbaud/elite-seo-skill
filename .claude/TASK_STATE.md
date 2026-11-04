@@ -98,3 +98,4 @@ Remaining gap = subjective (stale, pre-cycle-2). NEXT: re-review #3 (desloppify 
 - Review #4 run dir: .desloppify/subagents/runs/20261104_191513. Wave1 (1-5) launched.
 - R4 wave1 DONE (xmod 93, high 87, conv 92, err 90, naming 92). Wave2 launched.
 - R4 wave2 DONE (abs 91, deps 96, low 87, mid 90, test 88). Wave3 launched.
+- R4 wave3 DONE (api 84, authz 96, ai 91, mig 95, pkg 90). Wave4 launched.
