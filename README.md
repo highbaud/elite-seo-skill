@@ -12,7 +12,7 @@ It works for SaaS, local service, ecommerce, publisher, affiliate/review, market
 | `references/elite-seo-knowledge-plan.md` | The full operating system — layered authority model, 14 phases, 90-day plan, outranking playbooks |
 | `references/elite-seo-audit-strategy-expansion.md` | 24 diagnostic audit modules (crawl, rendering, index control, entities, cannibalization, CTR, decay, E-E-A-T, schema, ecommerce, local, international, migration QA, security, and more) |
 | `references/kit/` | The numbered SOPs (intake through agent readability); [`references/kit/README.md`](references/kit/README.md) is the index |
-| `assets/elite-seo-master-audit-workbook.xlsx` | 31-tab audit workbook with a scored Issue Register, priority formulas, dropdowns, and a per-bot crawler-access matrix |
+| `assets/elite-seo-master-audit-workbook.xlsx` | 33-tab audit workbook with a scored Issue Register, priority formulas, dropdowns, and a per-bot crawler-access matrix |
 | `assets/csv-templates/` | Every workbook tab as a CSV for Google Sheets / Airtable / Notion / a database |
 | `assets/elite-seo-audit-report-template.docx` | Client-ready audit report template |
 | `scripts/seo_gsc_analyzer.py` | Dependency-free Google Search Console export analyzer |
@@ -50,7 +50,10 @@ python scripts/seo_gsc_analyzer.py all previous.csv current.csv -o out/
 # -> GSC_Opportunities_filled.csv  (striking-distance + position-adjusted low CTR)
 # -> Cannibalization_filled.csv    (queries split across pages)
 # -> Content_Decay_filled.csv      (pages losing 20%+ clicks period-over-period)
+# -> Edit_Queue_filled.csv         (one ranked work queue: recover / ctr / rank)
 ```
+
+`queue` builds the work queue alone. `snapshot` and `measure` log an edit and re-read it against a same-dates control at +28 and +56 days (Edit_Measurement). See `references/kit/README.md`.
 
 Paste the output into the matching workbook tabs, then score survivors into the Issue Register.
 

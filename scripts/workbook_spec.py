@@ -19,10 +19,12 @@ from kit_common import CellValue
 Row = tuple[CellValue, ...]
 FillColor = Literal["red", "yellow", "green"]  # conditional-format fills the builder knows
 
-# Tabs other scripts refer to by name (the GSC analyzer pre-fills these three).
+# Tabs other scripts refer to by name (the GSC analyzer pre-fills these five).
 TAB_GSC_OPPORTUNITIES = "GSC_Opportunities"
 TAB_CANNIBALIZATION = "Cannibalization"
 TAB_CONTENT_DECAY = "Content_Decay"
+TAB_EDIT_QUEUE = "Edit_Queue"
+TAB_EDIT_MEASUREMENT = "Edit_Measurement"
 
 FIRST_DATA_ROW = 2  # row 1 holds the headers
 LAST_DATA_ROW = 500  # validations, fill-down formulas and formatting run to this row
@@ -89,6 +91,17 @@ ISSUE_HEADERS: tuple[str, ...] = (
     "Status", "Next Action", "Date Added",
 )
 DASHBOARD_HEADERS: tuple[str, ...] = ("Metric", "Formula / Value", "Notes")
+# Edit_Measurement is also the analyzer's snapshot/measure ledger format.
+EDIT_MEASUREMENT_HEADERS: tuple[str, ...] = (
+    "Edit ID", "URL", "Change Type", "Change Date", "Baseline Window",
+    "Base Page Clicks", "Base Page Impressions", "Base Page CTR", "Base Page Position",
+    "Base Site Clicks", "Base Site Impressions", "Base Site CTR", "Base Site Position",
+    "d28 Read Date", "d28 Page Clicks", "d28 Page Impressions", "d28 Page Position",
+    "d28 Site Clicks", "d28 Page Delta %", "d28 Site Delta %", "d28 Lift vs Control %",
+    "d56 Read Date", "d56 Page Clicks", "d56 Page Impressions", "d56 Page Position",
+    "d56 Site Clicks", "d56 Page Delta %", "d56 Site Delta %", "d56 Lift vs Control %",
+    "Status", "Notes",
+)
 
 _TABLES: dict[str, tuple[tuple[str, ...], tuple[Row, ...]]] = {
     'Site_Profile': (
@@ -298,7 +311,18 @@ _TABLES: dict[str, tuple[tuple[str, ...], tuple[Row, ...]]] = {
             ('/', '', '', '', '', '', '', '', '', 'Article / Product / Organization / none', '', '', '', ''),
         ),
     ),
-
+    TAB_EDIT_QUEUE: (
+        ('Rank', 'URL', 'Winning Lever', 'Fix Type', 'Est. Recoverable Clicks', 'Real Click Loss?', 'Clicks (current)', 'Clicks (previous)', 'Impressions (current)', 'Position', 'Actual CTR', 'Expected CTR', 'Recover Est.', 'CTR Est.', 'Rank Est.', 'Action', 'Status'),
+        (
+            ('', '', 'recover / ctr / rank', '', '', 'Yes / No', '', '', '', '', '', '', '', '', '', '', 'Open'),
+        ),
+    ),
+    TAB_EDIT_MEASUREMENT: (
+        EDIT_MEASUREMENT_HEADERS,
+        (
+            ('', '', 'recover / ctr / rank', *([''] * 26), 'baseline captured', 'Site columns are the control: same export, same dates.'),
+        ),
+    ),
 }
 
 _HEADERS: dict[str, tuple[str, ...]] = {
@@ -459,6 +483,14 @@ _TABLE_VALIDATIONS: dict[str, tuple[ListValidation, ...]] = {
     "Experiment_Log": (ListValidation(("Status",), ("Planned", "Running", "Done", "Abandoned")),),
     "Log_File_Analysis": (
         ListValidation(("Crawl Value",), ("High value", "Normal", "Under-crawled", "Waste")),
+    ),
+    TAB_EDIT_QUEUE: (
+        ListValidation(("Winning Lever",), ("recover", "ctr", "rank")),
+        ListValidation(("Real Click Loss?",), ("Yes", "No")),
+        ListValidation(("Status",), ("Open", "Approved", "Applied", "Skipped")),
+    ),
+    TAB_EDIT_MEASUREMENT: (
+        ListValidation(("Status",), ("baseline captured", "d28 read", "d56 read", "abandoned")),
     ),
     "Agent_Readability": (
         ListValidation(
