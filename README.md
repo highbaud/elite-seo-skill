@@ -16,7 +16,8 @@ It works for SaaS, local service, ecommerce, publisher, affiliate/review, market
 | `assets/csv-templates/` | Every workbook tab as a CSV for Google Sheets / Airtable / Notion / a database |
 | `assets/elite-seo-audit-report-template.docx` | Client-ready audit report template |
 | `scripts/seo_gsc_analyzer.py` | Dependency-free Google Search Console export analyzer |
-| `scripts/build_*.py` | Regenerate the workbook, CSVs, SOPs, and DOCX from source |
+| `scripts/build_*.py` | Regenerate the workbook, CSVs, and DOCX (tab definitions live in `scripts/workbook_spec.py`) |
+| `tests/` | pytest suite for the analyzer, the generators, and the analyzer/workbook header contract |
 
 ## Design principles
 
@@ -55,15 +56,24 @@ Paste the output into the matching workbook tabs, then score survivors into the 
 
 ## Regenerating the kit
 
-The workbook, CSVs, SOP docs, and DOCX are generated. Edit the generator scripts, not the outputs:
+The SOP docs in `references/` are plain Markdown: edit them directly.
+
+The workbook, the CSV templates, and the DOCX report template are generated, so edit the generators, not the outputs. Every workbook tab (name, headers, starter rows, dropdowns) is declared once in `scripts/workbook_spec.py`; the GSC analyzer reads its output headers from the same spec, so the two can't drift apart.
 
 ```bash
-pip install openpyxl python-docx
-python scripts/build_elite_seo_operating_kit.py   # workbook + CSVs + SOP docs
+pip install -r requirements.txt
+python scripts/build_elite_seo_operating_kit.py   # workbook + CSV templates
 python scripts/build_seo_report_docx.py           # DOCX report template
 ```
 
-All paths resolve relative to the skill folder, so it regenerates cleanly wherever it's cloned.
+Both builders write into `assets/` by default; pass `--out-dir <dir>` to write somewhere else. All paths resolve relative to the skill folder, so it regenerates cleanly wherever it's cloned.
+
+## Running the tests
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest
+```
 
 ## License
 

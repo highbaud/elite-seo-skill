@@ -1,0 +1,4 @@
+# Needed only to regenerate the workbook, CSV templates, and DOCX report template.
+# The GSC analyzer (scripts/seo_gsc_analyzer.py) uses the standard library only.
+openpyxl>=3.1,<4
+python-docx>=1.1,<2
