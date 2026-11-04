@@ -9,14 +9,13 @@ import csv
 import os
 from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
-from typing import Union
 
 # Portable: every path resolves relative to the skill folder these scripts live in.
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 ASSETS_DIR = SKILL_ROOT / "assets"
 CSV_TEMPLATE_DIR = ASSETS_DIR / "csv-templates"
 
-CsvValue = Union[str, int, float, None]
+CellValue = str | int | float | None  # one spreadsheet/CSV cell; None renders as empty
 
 
 def atomic_write(path: Path, write: Callable[[Path], None]) -> None:
@@ -37,8 +36,8 @@ def atomic_write(path: Path, write: Callable[[Path], None]) -> None:
 
 def write_csv(
     path: Path,
-    headers: Sequence[CsvValue],
-    rows: Iterable[Sequence[CsvValue]],
+    headers: Sequence[CellValue],
+    rows: Iterable[Sequence[CellValue]],
     *,
     lineterminator: str = "\r\n",
 ) -> None:

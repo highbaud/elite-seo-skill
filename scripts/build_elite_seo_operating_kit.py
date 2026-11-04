@@ -34,8 +34,8 @@ except ImportError as exc:
         "openpyxl is required to build the kit. Install it with: pip install -r requirements.txt"
     ) from exc
 
-from kit_common import ASSETS_DIR, atomic_write, write_csv
-from workbook_spec import LAST_DATA_ROW, SHEETS, CellValue, SheetSpec, column_letter
+from kit_common import ASSETS_DIR, CellValue, atomic_write, write_csv
+from workbook_spec import LAST_DATA_ROW, SHEETS, SheetSpec, column_letter
 
 WORKBOOK_NAME = "elite-seo-master-audit-workbook.xlsx"
 CSV_SUBDIR = "csv-templates"

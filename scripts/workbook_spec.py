@@ -12,10 +12,15 @@ formulas, conditional formatting) is resolved from header names through
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Union
 
-CellValue = Union[str, int, float, None]
+from kit_common import CellValue
+
 Row = tuple[CellValue, ...]
+
+# Tabs other scripts refer to by name (the GSC analyzer pre-fills these three).
+TAB_GSC_OPPORTUNITIES = "GSC_Opportunities"
+TAB_CANNIBALIZATION = "Cannibalization"
+TAB_CONTENT_DECAY = "Content_Decay"
 
 LAST_DATA_ROW = 500  # validations, fill-down formulas and formatting run to this row
 
@@ -117,19 +122,19 @@ _TABLES: dict[str, tuple[tuple[str, ...], tuple[Row, ...]]] = {
             ('Core category', '', 'Commercial', 'Consideration', '', '', '', 'Listicles / reviews / product pages', 5, 3, 'Comparison hub', 'Build'),
         ),
     ),
-    'GSC_Opportunities': (
+    TAB_GSC_OPPORTUNITIES: (
         ('Query', 'Page', 'Clicks', 'Impressions', 'CTR', 'Position', 'Opportunity Type', 'Action', 'Owner'),
         (
             ('', '', '', '', '', '', 'High impressions low CTR', 'Rewrite title/meta and improve first answer', 'SEO'),
         ),
     ),
-    'Content_Decay': (
+    TAB_CONTENT_DECAY: (
         ('URL', 'Page Type', 'Clicks 90d', 'Clicks Previous 90d', 'Delta', 'Rank Change', 'Freshness Need', 'Backlinks', 'Conversions', 'Action'),
         (
             ('', 'Guide', '', '', '', '', 'High', '', '', 'Refresh'),
         ),
     ),
-    'Cannibalization': (
+    TAB_CANNIBALIZATION: (
         ('Keyword / Intent', 'URL 1', 'URL 2', 'Conflict Type', 'Winning URL', 'Decision', 'Redirect / Canonical / Rewrite'),
         (
             ('', '', '', 'True duplicate / intent split / format mismatch', '', '', ''),
@@ -365,18 +370,32 @@ def _band_formula(guarded: bool) -> str:
 
 
 def _issue_rows() -> tuple[Row, ...]:
-    priority, band = _priority_formula(False), _band_formula(False)
-    seeds = (
-        ("SEO-001", "Technical", "Important pages missing from XML sitemap", "Sitemap vs crawl export mismatch", "/services/*", 4, 2, 4, 3, 4, "A", "Dev", "Open", "Regenerate sitemap with canonical indexable URLs only"),
-        ("SEO-002", "Content", "High-impression page has weak CTR", "GSC export", "/blog/example", 3, 1, 3, 2, 5, "B", "SEO", "Open", "Rewrite title/meta and add snippet-supporting answer block"),
-        ("SEO-003", "AI Search", "Competitors cited for category prompt but brand absent", "AI prompt tracker", "/compare/", 4, 3, 3, 3, 3, "B", "Content", "Open", "Build answer-ready comparison hub and verify crawler access"),
+    """Starter issues, keyed by header; Priority/Priority Band are filled with formulas."""
+    seeds: tuple[dict[str, CellValue], ...] = (
+        {"ID": "SEO-001", "Module": "Technical", "Issue": "Important pages missing from XML sitemap",
+         "Evidence": "Sitemap vs crawl export mismatch", "Affected URL / Pattern": "/services/*",
+         "Impact": 4, "Effort": 2, "Confidence": 4, "Risk": 3, "Speed": 4, "Source Grade": "A",
+         "Owner": "Dev", "Status": "Open",
+         "Next Action": "Regenerate sitemap with canonical indexable URLs only"},
+        {"ID": "SEO-002", "Module": "Content", "Issue": "High-impression page has weak CTR",
+         "Evidence": "GSC export", "Affected URL / Pattern": "/blog/example",
+         "Impact": 3, "Effort": 1, "Confidence": 3, "Risk": 2, "Speed": 5, "Source Grade": "B",
+         "Owner": "SEO", "Status": "Open",
+         "Next Action": "Rewrite title/meta and add snippet-supporting answer block"},
+        {"ID": "SEO-003", "Module": "AI Search", "Issue": "Competitors cited for category prompt but brand absent",
+         "Evidence": "AI prompt tracker", "Affected URL / Pattern": "/compare/",
+         "Impact": 4, "Effort": 3, "Confidence": 3, "Risk": 3, "Speed": 3, "Source Grade": "B",
+         "Owner": "Content", "Status": "Open",
+         "Next Action": "Build answer-ready comparison hub and verify crawler access"},
     )
+    formulas = {"Priority": _priority_formula(False), "Priority Band": _band_formula(False)}
     rows: list[Row] = []
     for row_number, seed in enumerate(seeds, start=2):
-        number = str(row_number)
-        rows.append(
-            (*seed[:10], priority.replace("{row}", number), band.replace("{row}", number), *seed[10:], "")
-        )
+        values = {**seed, **{h: f.replace("{row}", str(row_number)) for h, f in formulas.items()}}
+        unknown = set(values) - set(ISSUE_HEADERS)
+        if unknown:
+            raise ValueError(f"Issue_Register seed uses unknown headers: {sorted(unknown)}")
+        rows.append(tuple(values.get(header, "") for header in ISSUE_HEADERS))
     return tuple(rows)
 
 

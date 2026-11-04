@@ -19,7 +19,6 @@ import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Union
 
 from kit_common import ASSETS_DIR, atomic_write
 
@@ -72,7 +71,7 @@ class TableBody:
     blank_rows: int
 
 
-Body = Union[ParagraphBody, BulletsBody, TableBody]
+Body = ParagraphBody | BulletsBody | TableBody
 
 
 @dataclass(frozen=True)

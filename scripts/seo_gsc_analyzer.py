@@ -36,7 +36,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from kit_common import CsvValue, write_csv
+from kit_common import CellValue, write_csv
 from workbook_spec import headers_for
 
 # Rough expected CTR by position bucket (industry-typical medians; used only to
@@ -57,7 +57,7 @@ TAB_OPPORTUNITIES = "GSC_Opportunities"
 TAB_CANNIBALIZATION = "Cannibalization"
 TAB_DECAY = "Content_Decay"
 
-TabRow = list[CsvValue]
+TabRow = list[CellValue]
 
 
 class GscInputError(ValueError):
