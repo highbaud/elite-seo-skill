@@ -55,3 +55,5 @@ Streams (Sonnet agents, same worktree, disjoint files, agents do NOT commit / NO
 - B builder: owns scripts/build_elite_seo_operating_kit.py, scripts/workbook_spec.py (fill all tabs, keep headers_for API), tests/test_build_kit.py. Must reproduce assets byte-identical (CSVs) / content-identical (xlsx).
 - C docx: owns scripts/build_seo_report_docx.py, tests/test_build_report_docx.py.
 - Me after: requirements*.txt, README/SKILL.md/kit README, contract test, review, resolve items, commit, rescan.
+- Agents A/B/C launched (Sonnet, background). Me: DONE (uncommitted, commit with agent code): requirements.txt, requirements-dev.txt, README.md regen+tests sections, SKILL.md automation line, references/kit/README.md asset paths.
+  If session dies before agents finish: check `git status`; review each script vs its spec in this file; run `python3 -m pytest -q`.
