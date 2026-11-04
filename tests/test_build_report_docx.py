@@ -12,7 +12,7 @@ pytest.importorskip("docx")
 from docx import Document  # noqa: E402
 
 import build_seo_report_docx as mod  # noqa: E402
-from kit_common import ASSETS_DIR  # noqa: E402
+from kit_common import ASSETS_DIR, SKILL_ROOT  # noqa: E402
 
 COMMITTED = ASSETS_DIR / mod.OUTPUT_NAME
 
@@ -85,3 +85,26 @@ def test_unwritable_out_dir_is_clean_error(tmp_path: Path, capsys: pytest.Captur
     blocker.write_text("x")
     assert mod.main(["--out-dir", str(blocker)]) == 1
     assert capsys.readouterr().err.startswith("error: could not write")
+
+
+def _markdown_sections(path: Path) -> list[tuple[str, list[list[str]]]]:
+    """(H2 heading, tables) pairs from a Markdown file; each table is its header row only."""
+    sections: list[tuple[str, list[list[str]]]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.startswith("## "):
+            sections.append((line[3:].strip(), []))
+        elif sections and line.startswith("|") and not set(line) <= set("|- "):
+            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            tables = sections[-1][1]
+            if not tables:  # first table row is the header
+                tables.append(cells)
+    return sections
+
+
+def test_markdown_template_matches_docx_sections() -> None:
+    markdown = _markdown_sections(SKILL_ROOT / "references" / "kit" / "07-client-report-template.md")
+    docx_headings = [re.sub(r"^\d+\.\s*", "", section.heading) for section in mod.SECTIONS]
+    assert [heading for heading, _ in markdown] == docx_headings
+    for (heading, tables), section in zip(markdown, mod.SECTIONS):
+        if tables and isinstance(section.body, mod.TableBody):
+            assert tables[0] == list(section.body.headers), heading

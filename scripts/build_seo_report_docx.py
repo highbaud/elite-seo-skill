@@ -247,6 +247,7 @@ def build_document() -> DocumentType:
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build the Elite SEO client report DOCX template.")
     parser.add_argument(
+        "-o",
         "--out-dir",
         type=Path,
         default=ASSETS_DIR,

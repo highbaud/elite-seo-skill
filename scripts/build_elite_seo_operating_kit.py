@@ -161,6 +161,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description="Build the Elite SEO Operating Kit workbook and CSV templates.")
     parser.add_argument(
+        "-o",
         "--out-dir",
         type=Path,
         default=ASSETS_DIR,
