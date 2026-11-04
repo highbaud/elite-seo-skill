@@ -30,7 +30,8 @@ strict 10.5 | objective 42.2 | code quality 81.8 | dup 100 | file health 80 | se
 - Agents: Sonnet, waves of 5. Wave1=1-5, wave2=6-10, wave3=11-15, wave4=16-20.
 - After all done: `desloppify review --import-run .desloppify/subagents/runs/20261104_184513 --scan-after-import`
 - If interrupted: check which results/*.raw.txt exist; rerun only missing batches.
-- Wave1 (1-5) DONE, spot-checked: evidence concrete. Wave2 (6-10) launched.
+- Wave1+2 (1-10) DONE, evidence concrete. Wave3 (11-15) launched.
+- Scores so far: b1 cross_module_architecture=82.0; b2 high_level_elegance=74.0; b3 convention_outlier=82.0; b4 error_consistency=68.0; b5 naming_quality=78.0; b6 abstraction_fitness=90.0; b7 dependency_health=88.0; b8 low_level_elegance=68.0; b9 mid_level_elegance=71.0; b10 test_strategy=22.0
 
 ## Notes for execute phase
 - build_elite_seo_operating_kit.py build_docs() (~790 LOC of embedded md) regenerates references/kit/*.md byte-identical to committed files (verified in scratch copy: no git diff). Strong candidate: make .md files source of truth, drop embedded copies.
