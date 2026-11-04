@@ -242,12 +242,12 @@ def build_document() -> DocumentType:
     return doc
 
 
-def write_report(out_dir: Path) -> list[str]:
-    """Build the report template, save it atomically under ``out_dir``, return its path."""
+def write_report(out_dir: Path) -> list[Path]:
+    """Build the report template, save it atomically under ``out_dir``; return [path]."""
     path = out_dir / OUTPUT_NAME
     doc = build_document()
     atomic_write(path, lambda tmp: doc.save(str(tmp)))
-    return [str(path)]
+    return [path]
 
 
 def main(argv: Sequence[str] | None = None) -> int:

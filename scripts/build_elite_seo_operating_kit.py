@@ -34,7 +34,7 @@ except ImportError:
     MISSING_DEPENDENCY = "openpyxl is not installed; run: pip install -r requirements.txt"
 
 from kit_common import CellValue, atomic_write, run_builder, write_csv
-from workbook_spec import LAST_DATA_ROW, SHEETS, SheetSpec, column_letter
+from workbook_spec import LAST_DATA_ROW, SHEETS, FillColor, SheetSpec, column_letter
 
 WORKBOOK_NAME = "elite-seo-master-audit-workbook.xlsx"
 CSV_SUBDIR = "csv-templates"
@@ -49,7 +49,7 @@ GRAY = "E7E6E6"
 WHITE = "FFFFFF"
 BLACK = "000000"
 
-FILL_COLORS: dict[str, str] = {"red": RED, "yellow": YELLOW, "green": GREEN}
+FILL_COLORS: dict[FillColor, str] = {"red": RED, "yellow": YELLOW, "green": GREEN}
 
 
 def style_sheet(ws: Worksheet) -> None:
@@ -140,26 +140,24 @@ def export_csvs(wb: Workbook, csv_dir: Path) -> list[Path]:
     paths: list[Path] = []
     for ws in wb.worksheets:
         rows: list[tuple[CellValue, ...]] = list(ws.iter_rows(values_only=True))
+        header_row, data_rows = rows[0], rows[1:]
+        headers = [value for value in header_row if isinstance(value, str)]
+        if len(headers) != len(header_row):
+            raise ValueError(f"{ws.title}: every header cell must be text, got {header_row!r}")
         path = csv_dir / f"{ws.title}.csv"
-        write_csv(path, rows[0], rows[1:], lineterminator=TEMPLATE_LINE_ENDING)
+        write_csv(path, headers, data_rows, lineterminator=TEMPLATE_LINE_ENDING)
         paths.append(path)
     return paths
 
 
-def build_kit(out_dir: Path) -> tuple[Path, Path]:
-    """Build the workbook and CSV templates under ``out_dir``; return (workbook, csv_dir)."""
+def build_kit(out_dir: Path) -> list[Path]:
+    """Build the workbook and CSV templates under ``out_dir``; return [workbook, csv_dir]."""
     wb = build_workbook()
     workbook_path = out_dir / WORKBOOK_NAME
     atomic_write(workbook_path, lambda tmp: wb.save(tmp))
     csv_dir = out_dir / CSV_SUBDIR
     export_csvs(wb, csv_dir)
-    return workbook_path, csv_dir
-
-
-def _build_and_summarize(out_dir: Path) -> list[str]:
-    """Build the kit into ``out_dir`` and return the lines to print."""
-    workbook_path, csv_dir = build_kit(out_dir)
-    return [f"Created kit at {out_dir}", f"Workbook: {workbook_path}", f"CSV templates: {csv_dir}"]
+    return [workbook_path, csv_dir]
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -169,7 +167,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         description="Build the Elite SEO Operating Kit workbook and CSV templates.",
         out_dir_help="output directory (default: the skill's assets/ folder); CSVs go to <out-dir>/csv-templates/",
         missing_dependency=MISSING_DEPENDENCY,
-        build=_build_and_summarize,
+        build=build_kit,
     )
 
 

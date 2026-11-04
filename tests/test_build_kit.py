@@ -150,3 +150,12 @@ def test_missing_openpyxl_is_clean_error(
     assert builder.main(["-o", str(tmp_path)]) == 1
     assert capsys.readouterr().err == "error: openpyxl is not installed\n"
     assert not any(tmp_path.iterdir())
+
+
+def test_export_csvs_rejects_non_text_headers(tmp_path: Path) -> None:
+    from openpyxl import Workbook
+
+    wb = Workbook()
+    wb.active.append(["Name", 42])
+    with pytest.raises(ValueError, match="header cell must be text"):
+        builder.export_csvs(wb, tmp_path)

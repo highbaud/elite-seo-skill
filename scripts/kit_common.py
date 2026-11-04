@@ -38,7 +38,7 @@ def atomic_write(path: Path, write: Callable[[Path], None]) -> None:
 
 def write_csv(
     path: Path,
-    headers: Sequence[CellValue],
+    headers: Sequence[str],
     rows: Iterable[Sequence[CellValue]],
     *,
     lineterminator: str = "\r\n",
@@ -52,7 +52,7 @@ def write_csv(
     def _write(tmp_path: Path) -> None:
         with tmp_path.open("w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f, lineterminator=lineterminator)
-            writer.writerow(["" if value is None else value for value in headers])
+            writer.writerow(headers)
             writer.writerows(["" if value is None else value for value in row] for row in rows)
 
     atomic_write(path, _write)
@@ -64,13 +64,13 @@ def run_builder(
     description: str,
     out_dir_help: str,
     missing_dependency: str | None,
-    build: Callable[[Path], Sequence[str]],
+    build: Callable[[Path], Sequence[Path]],
 ) -> int:
     """Shared CLI for the asset builders; returns the process exit code.
 
     Parses ``-o/--out-dir`` (default: the skill's assets/ folder), reports a missing
     dependency or an unwritable output location as a one-line ``error:`` message,
-    otherwise runs ``build(out_dir)`` and prints the summary lines it returns.
+    otherwise runs ``build(out_dir)`` and prints each path it reports writing.
     """
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("-o", "--out-dir", type=Path, default=ASSETS_DIR, help=out_dir_help)
@@ -79,10 +79,10 @@ def run_builder(
         print(f"error: {missing_dependency}", file=sys.stderr)
         return 1
     try:
-        summary = build(out_dir)
+        written = build(out_dir)
     except OSError as exc:
         print(f"error: could not write to {out_dir}: {exc}", file=sys.stderr)
         return 1
-    for line in summary:
-        print(line)
+    for path in written:
+        print(f"wrote {path}")
     return 0

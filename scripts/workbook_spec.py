@@ -12,10 +12,12 @@ formulas, conditional formatting) is resolved from header names through
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
 from kit_common import CellValue
 
 Row = tuple[CellValue, ...]
+FillColor = Literal["red", "yellow", "green"]  # conditional-format fills the builder knows
 
 # Tabs other scripts refer to by name (the GSC analyzer pre-fills these three).
 TAB_GSC_OPPORTUNITIES = "GSC_Opportunities"
@@ -54,7 +56,7 @@ class FillDown:
 
 @dataclass(frozen=True)
 class ConditionalFill:
-    """Fill ``fill`` (a colour name such as "red") on ``header``'s column where ``template`` holds.
+    """Fill ``fill`` on ``header``'s column where ``template`` holds.
 
     ``template`` is a rule formula containing ``{col}`` (the column letter) and ``{first}``
     (the first row of the range).
@@ -62,7 +64,7 @@ class ConditionalFill:
 
     header: str
     template: str
-    fill: str
+    fill: FillColor
     first_row: int = 2
     last_row: int = LAST_DATA_ROW
 
