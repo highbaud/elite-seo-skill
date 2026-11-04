@@ -95,3 +95,4 @@ Remaining gap = subjective (stale, pre-cycle-2). NEXT: re-review #3 (desloppify 
 - Cycle 3 DONE: commits 19f4215, 38268a4, 027447a, 08bb6a4. All 13 resolved + boilerplate dup (run_builder). strict 92.1, objective 100.
 - Cannibalization bug fixed (aggregate per query+page). Builders: missing deps -> clean error. xlsx contract test.
 - NEXT: review #4 to credit cycle-3 fixes.
+- Review #4 run dir: .desloppify/subagents/runs/20261104_191513. Wave1 (1-5) launched.
