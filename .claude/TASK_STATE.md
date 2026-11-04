@@ -63,3 +63,7 @@ Streams (Sonnet agents, same worktree, disjoint files, agents do NOT commit / NO
 - Extra fixes (me): analyzer --out-dir alias; builders catch OSError. 49 tests pass.
 - NEXT: resolve all review items w/ notes (desloppify plan resolve <id> --note ... --confirm), then rescan.
 - All 37 review items resolved (in plan order; short notes get silently refused, check for 'Resolved 1 issue'). commit-log recorded. NEXT: desloppify scan.
+
+## Cycle 1 result (scan after fixes)
+strict 70.1 | overall 79.1 | objective 98.8 (from 42.2). 3 open = sys_exit_in_library false positives on `sys.exit(main())` in __main__ guard (desloppify detector ignores main guard; _CLI_FILENAMES only). Left as-is deliberately (not gaming via raise SystemExit). Tell user; upstream issue needs their OK.
+Subjective scores are stale (pre-refactor). NEXT: re-review all dims: `desloppify review --run-batches --dry-run --force-review-rerun` -> Sonnet agents, strict "must Write file" prompt, waves of 5.
