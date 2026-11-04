@@ -30,7 +30,7 @@ strict 10.5 | objective 42.2 | code quality 81.8 | dup 100 | file health 80 | se
 - Agents: Sonnet, waves of 5. Wave1=1-5, wave2=6-10, wave3=11-15, wave4=16-20.
 - After all done: `desloppify review --import-run .desloppify/subagents/runs/20261104_184513 --scan-after-import`
 - If interrupted: check which results/*.raw.txt exist; rerun only missing batches.
-- Wave1+2 (1-10) DONE, evidence concrete. Wave3 (11-15) launched.
+- Wave1-3 (1-15) DONE except b13 (retry running; 1st attempt wrote nothing). b12,b15 returned JSON in msg -> I copied it verbatim to results. Wave4: 16-19 launched, 20 after. Use strict "must Write file" prompt.
 - Scores so far: b1 cross_module_architecture=82.0; b2 high_level_elegance=74.0; b3 convention_outlier=82.0; b4 error_consistency=68.0; b5 naming_quality=78.0; b6 abstraction_fitness=90.0; b7 dependency_health=88.0; b8 low_level_elegance=68.0; b9 mid_level_elegance=71.0; b10 test_strategy=22.0
 
 ## Notes for execute phase
@@ -38,3 +38,4 @@ strict 10.5 | objective 42.2 | code quality 81.8 | dup 100 | file health 80 | se
 - Deps present: openpyxl 3.1.5, python-docx 1.2.0. pytest not checked yet.
 - Contract: SKILL.md:48 + README.md:58 say "edit generator scripts, never generated files". Extracting build_docs md => must update both docs. Tell user (authoring workflow change).
 - pytest NOT installed (needed for test health; pip install pytest, dev-only).
+- BUG to fix: seo_gsc_analyzer read_rows: blank position -> 0.0 -> treated as rank 1 (b11).
