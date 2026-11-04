@@ -225,3 +225,11 @@ def test_headers_match_csv_template(title):
     template = CSV_TEMPLATE_DIR / f"{title}.csv"
     with template.open(newline="", encoding="utf-8-sig") as f:
         assert headers_for(title) == next(csv.reader(f))
+
+
+@pytest.mark.parametrize("flag", ["-o", "--out", "--out-dir"])
+def test_output_dir_flag_spellings(flag, tmp_path, capsys):
+    cur = write_export(tmp_path / "current.csv", ["q1,/a,10,2000,0.5%,6"])
+    out = tmp_path / flag.strip("-")
+    gsc.main(["opportunities", str(cur), flag, str(out)])
+    assert (out / "GSC_Opportunities_filled.csv").exists()

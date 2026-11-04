@@ -104,3 +104,11 @@ def test_issue_register_formulas_and_formatting(built: Path) -> None:
     assert ws[f"{band}500"].value.startswith(f'=IF({priority}500="",""')
     ranges = {str(rng.sqref) for rng in ws.conditional_formatting}
     assert ranges == {f"{band}2:{band}500"}
+
+
+def test_unwritable_out_dir_is_clean_error(tmp_path: Path) -> None:
+    blocker = tmp_path / "not-a-dir"
+    blocker.write_text("x")
+    with pytest.raises(SystemExit) as exc:
+        builder.main(["--out-dir", str(blocker)])
+    assert str(exc.value).startswith("error: could not write the kit to")

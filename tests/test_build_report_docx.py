@@ -78,3 +78,11 @@ def test_table_specs_have_headers() -> None:
     for body in tables:
         assert len(body.headers) >= 1
         assert body.blank_rows >= 0
+
+
+def test_unwritable_out_dir_is_clean_error(tmp_path: Path) -> None:
+    blocker = tmp_path / "not-a-dir"
+    blocker.write_text("x")
+    with pytest.raises(SystemExit) as exc:
+        mod.main(["--out-dir", str(blocker)])
+    assert str(exc.value).startswith("error: could not write")

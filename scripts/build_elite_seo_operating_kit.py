@@ -18,6 +18,7 @@ Requires openpyxl: pip install -r requirements.txt
 from __future__ import annotations
 
 import argparse
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -171,7 +172,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 def main(argv: Sequence[str] | None = None) -> None:
     """CLI entry point."""
     args = parse_args(argv)
-    workbook_path, csv_dir = build_kit(args.out_dir)
+    try:
+        workbook_path, csv_dir = build_kit(args.out_dir)
+    except OSError as exc:
+        sys.exit(f"error: could not write the kit to {args.out_dir}: {exc}")
     print(f"Created kit at {args.out_dir}")
     print(f"Workbook: {workbook_path}")
     print(f"CSV templates: {csv_dir}")

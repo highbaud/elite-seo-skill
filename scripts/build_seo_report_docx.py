@@ -15,6 +15,7 @@ Requires python-docx (pip install -r requirements.txt).
 from __future__ import annotations
 
 import argparse
+import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -259,7 +260,10 @@ def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
     path: Path = args.out_dir / OUTPUT_NAME
     doc = build_document()
-    atomic_write(path, lambda tmp: doc.save(str(tmp)))
+    try:
+        atomic_write(path, lambda tmp: doc.save(str(tmp)))
+    except OSError as exc:
+        sys.exit(f"error: could not write {path}: {exc}")
     print(path)
 
 

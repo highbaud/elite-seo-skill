@@ -266,7 +266,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     ap.add_argument("files", nargs="+",
                     help="GSC export CSV(s): one file for opportunities/cannibalization; "
                          "previous then current for decay/all")
-    ap.add_argument("-o", "--out", default=".", help="output directory")
+    ap.add_argument("-o", "--out-dir", "--out", dest="out", default=".",
+                    help="output directory (default: current directory)")
     args = ap.parse_args(argv)
 
     expected = 2 if args.mode in ("decay", "all") else 1
